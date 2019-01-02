@@ -1,0 +1,8 @@
+psutil
+lxml
+parsedatetime
+python-dateutil
+timeago
+pytz
+git+https://github.com/Rapptz/discord.py@rewrite
+ujson
