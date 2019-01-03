@@ -1,11 +1,9 @@
-import asyncio
 import random
 import re
 
 import discord
 from discord import PartialEmoji
 from discord.ext import commands
-from discord.ext.commands import UserInputError, BucketType
 
 from utils import formats
 from utils.paginator import HelpPaginator
@@ -55,6 +53,10 @@ class General:
     @commands.command(name="hug")
     async def hug(self, ctx, target: discord.Member = None):
         await ctx.send(f"Hello {target.mention if hasattr(target, 'mention') else ctx.author.mention}")
+
+    @commands.command(name="prefix")
+    async def _prefix(self, ctx):
+        await ctx.send(f"My Current prefix is {ctx.bot.default_prefix} or you can always mention me.")
 
     @commands.command()
     async def flip(self, ctx: commands.Context):
