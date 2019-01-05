@@ -2,11 +2,9 @@ import random
 import re
 
 import discord
-from discord import PartialEmoji
 from discord.ext import commands
 
 from utils import formats
-from utils.paginator import HelpPaginator
 
 
 class TimeParser:
@@ -45,18 +43,9 @@ class General:
     def __str__(self):
         return self.__class__.__name__
 
-    @commands.command(name="hi", aliases=['hello'])
-    async def welcome(self, ctx):
-        """Display's a welcome message"""
-        await ctx.send(f"Hello! I am a bot made by {ctx.bot.owner}")
-
     @commands.command(name="hug")
     async def hug(self, ctx, target: discord.Member = None):
         await ctx.send(f"Hello {target.mention if hasattr(target, 'mention') else ctx.author.mention}")
-
-    @commands.command(name="prefix")
-    async def _prefix(self, ctx):
-        await ctx.send(f"My Current prefix is {ctx.bot.default_prefix} or you can always mention me.")
 
     @commands.command()
     async def flip(self, ctx: commands.Context):
@@ -113,11 +102,6 @@ class General:
         await ctx.send(random.choice([choicea, choiceb]))
 
     @commands.command()
-    async def ping(self, ctx):
-        """displays the bot's latency with discord"""
-        await ctx.send(f"Current ping is: **{round(ctx.bot.latency, 2)} seconds**")
-
-    @commands.command()
     async def suggest(self, ctx, *, suggestion):
         """Adds a suggestion for a bot feature"""
         suggestion_channel = ctx.bot.get_channel(384410040880201730)
@@ -126,33 +110,17 @@ class General:
             embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
             embed.timestamp = ctx.message.created_at
             embed.description = suggestion
+            embed.set_footer(text=ctx.bot.name)
             await suggestion_channel.send(embed=embed)
             await ctx.message.add_reaction("\U0001f44d")
-
-    @commands.command(name='help')
-    async def _help(self, ctx, *, command: str = None):
-        """Shows help about a command for the bot"""
-        if command is None:
-            p = await HelpPaginator.from_bot(ctx)
-        else:
-            entity = self.bot.get_cog(command) or self.bot.get_command(command)
-            if entity is None:
-                clean = command.replace('@', '@\u200b')
-                return await ctx.send(f'Command or category "{clean}" not found.')
-            elif isinstance(entity, commands.Command):
-                p = await HelpPaginator.from_command(ctx, entity)
-            else:
-                p = await HelpPaginator.from_cog(ctx, entity)
-
-        await p.paginate()
 
     @commands.command(name="rps", enabled=False, hidden=True)
     async def rpsgame(self, ctx):
         choices = ['rock', 'paper', 'scissors']
-        bot_choice = random.randint(0, 2)
+        bot_choice = random.choice(choices)
 
         def check(m):
-            return m.author == ctx.author and ctx.message.content in ['rock', 'paper', 'scissors']
+            return m.author == ctx.author and ctx.message.content.lower() in choices
 
         response = ctx.bot.wait_for("message", check=check)
         player_decision = choices.index(response.content.lower())
@@ -161,10 +129,6 @@ class General:
             await ctx.send("Its a TIE!")
         elif player_decision > bot_choice or player_decision:
             await ctx.send(f"{ctx.author} WINS!!!")
-
-    @commands.command()
-    async def emojinfo(self, ctx, emoji: PartialEmoji):
-        await ctx.send(type(emoji))
 
     #
     # @commands.group(invoke_without_command=True)
