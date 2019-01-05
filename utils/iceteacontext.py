@@ -43,4 +43,4 @@ class IceTeaContext(Context):
 
 
 if __name__ == '__main__':
-    from iceteabot import Iceteabot
+    from utils.iceteabot import Iceteabot

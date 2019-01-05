@@ -1,5 +1,6 @@
 import datetime
 import glob
+import logging
 import os
 import typing
 import ujson
@@ -12,22 +13,23 @@ from discord import User, Guild
 from discord.ext import commands
 from discord.ext.commands import Command
 
-from iceteacontext import IceTeaContext
+from utils.iceteacontext import IceTeaContext
 
 
 class Iceteabot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        self.config = kwargs.pop("config")
-        self.default_prefix = self.config.get("default_prefix", "<<<")
-        self.uptime = datetime.datetime.utcnow()
+        self.config: dict = kwargs.pop("config")
+        self.name: str = self.config.get("name", "iceteabot")
+        self.default_prefix: str = self.config.get("default_prefix", "<<<")
+        self.uptime: datetime.datetime = datetime.datetime.utcnow()
         self.command_stats: typing.Dict[Guild, typing.Dict[User, typing.Counter[Command, int]]] = {}
         self.owner: User = None
-        self.cog_path = "cogs"
-        super(Iceteabot, self).__init__(
-            command_prefix=commands.when_mentioned_or(self.default_prefix), activity=discord.Game("With the Universe"),
-            *args, **self.config)
+        self.cog_path: str = "cogs"
         self.aioconnection: ClientSession = ClientSession(json_serialize=ujson.dumps, loop=self.loop)
         self.loop.create_task(self._initialize())
+        super(Iceteabot, self).__init__(
+            command_prefix=commands.when_mentioned_or(self.default_prefix), activity=discord.Game(self.config['game']),
+            *args, **self.config)
         self.remove_command("help")
 
     def run(self, *args, **kwargs):
@@ -41,6 +43,18 @@ class Iceteabot(commands.Bot):
 
     def get_context(self, message, *, cls=IceTeaContext):
         return super(Iceteabot, self).get_context(message, cls=cls)
+
+    def setup_logging(self):
+        logger = logging.getLogger("discord")
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename="data/iceteabot.log", encoding='utf-8', mode='w')
+        handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+        logger.addHandler(handler)
+        error_logger = logging.getLogger("errors")
+        error_logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename="data/error.log", encoding='utf-8', mode='w')
+        handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+        error_logger.addHandler(handler)
 
     async def _initialize(self):
         await self.wait_until_ready()

@@ -11,8 +11,8 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
-from iceteacontext import IceTeaContext
 from utils import time
+from utils.iceteacontext import IceTeaContext
 
 
 # The owner class, commands here can only be executed by the owner of the bot
@@ -133,20 +133,6 @@ class Owner:
             await ctx.send("Name changed successfully")
         except discord.Forbidden:
             await ctx.send("I do not have permissions to edit my name :cry:")
-
-    @commands.command(hidden=True, aliases=['grantadmin'])
-    async def bestowadmin(self, ctx: IceTeaContext):
-        """Grants all mentioned users admin privileges
-        Can only be used by god"""
-        for member in ctx.message.mentions:
-            mymember = await ctx.bot.icethinkdb.get_member(member.id)
-            if mymember.administrator:
-                await ctx.send(f"{ctx.author.mention} is already an Admin")
-            else:
-                setattr(mymember, "administrator", True)
-                await mymember.save()
-                await ctx.send(
-                    f"{member.mention} has been promoted to Administrator status, may god have mercy on our souls.")
 
     @commands.command(hidden=True)
     async def load(self, ctx: IceTeaContext, *, cog: str):
