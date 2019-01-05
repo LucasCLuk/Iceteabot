@@ -72,7 +72,7 @@ class Stats:
     @commands.guild_only()
     async def about(self, ctx: IceTeaContext):
         """Tells you information about the bot itself."""
-        embed = discord.Embed(description="Iceteabot version **{0}**".format("infinity"))
+        embed = discord.Embed(description=f"{ctx.bot.name} version **{ctx.bot.version}**")
         embed.colour = ctx.me.top_role.color
         owner = ctx.bot.owner
         embed.set_thumbnail(url=ctx.me.avatar_url)
