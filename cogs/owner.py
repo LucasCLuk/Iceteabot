@@ -1,6 +1,5 @@
 # Built-in Libs
 import asyncio
-import glob
 import io
 import os
 import textwrap
@@ -21,7 +20,6 @@ class Owner:
     def __init__(self, bot):
         self.bot = bot
         self.log = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'iceteabot.log')
-        self.sessions = set()
 
     def __str__(self):
         return self.__class__.__name__
@@ -104,14 +102,21 @@ class Owner:
                 await ctx.send(f'```py\n{value}{ret}\n```')
 
     @commands.command(name="chavatar")
-    async def avatar(self, ctx: IceTeaContext, link):
-        """Edits the bot's avatar. Can only be used by owner"""
-        async with ctx.bot.aioconnection.get(link) as response:
-            try:
-                await ctx.bot.user.edit(avatar=await response.read())
-            except:
-                await ctx.send("Unable to use this link")
-        await ctx.send("Avatar Changed successfully")
+    async def avatar(self, ctx: IceTeaContext, link=None):
+        """Edits the bot's avatar. Can only be used by owner can provide a link or attachment"""
+        if link is None:
+            if ctx.message.attachments:
+                attachment_link: discord.Attachment = ctx.message.attachments[0]
+                link = attachment_link.url
+        if link is not None:
+            async with ctx.bot.aioconnection.get(link) as response:
+                try:
+                    await ctx.bot.user.edit(avatar=await response.read())
+                except:
+                    await ctx.send("Unable to use this link")
+            await ctx.send("Avatar Changed successfully")
+        else:
+            await ctx.send("No data provided. Either pass a link to an image or attach one")
 
     @commands.command()
     async def botname(self, ctx, name: str = None):
@@ -169,7 +174,7 @@ class Owner:
 
     @commands.command(name='viewcogs', hidden=True)
     async def _viewcogs(self, ctx: IceTeaContext):
-        await ctx.send("\n".join(cog.split(".")[2] for cog in ctx.bot.extensions))
+        await ctx.send("\n".join(cog for cog in ctx.bot.extensions))
 
     @commands.command(hidden=True, aliases=['shutoff', 'quit', 'logout', 'wq!'])
     async def botshutdown(self, ctx: IceTeaContext):
@@ -178,30 +183,12 @@ class Owner:
         await ctx.send("Good-bye...")
         await ctx.bot.logout()
 
-    @commands.command(hidden=True, aliases=['log'], enabled=False)
-    async def log_viewer(self, ctx: IceTeaContext):
-        """Displays the log file"""
-        with open(self.log, mode='r') as log:
-            logfile = log.readlines()
-        msg = "```py\n"
-        counter = -1
-        for line in logfile:
-            if counter == -11:
-                break
-            msg += "{0}\n".format(logfile[counter])
-            counter -= 1
-        msg += "\n```"
-        await ctx.send(msg)
-
     @commands.command(hidden=True, name="cogstatus", aliases=['cstatus'])
     async def cog_status(self, ctx: IceTeaContext):
         """Displays all currently loaded cogs"""
-        cog_names = [cog.split(".")[2] for cog in ctx.bot.extensions]
-        msg = ""
-        for ext in [f"src.discord.cogs.{os.path.basename(ext)[:-3]}"
-                    for ext in glob.glob("src/discord/cogs/*.py")]:
-            msg += f'{ext[:-3]} : {":ballot_box_with_check:" if ext[:-3] in cog_names else ":no_entry_sign:"}\n'
-        embed = discord.Embed(description="Cog status", title="Iceteabot Cog Status")
+        cog_names = [cog for cog in ctx.bot.extensions]
+        msg = "\n".join(cog_names)
+        embed = discord.Embed(description="Cog status", title=f"{ctx.bot.name} Cog Status")
         embed.set_thumbnail(url="http://i.imgur.com/5BFecvA.png")
         embed.add_field(name="Cogs loaded:",
                         value=msg
@@ -211,8 +198,8 @@ class Owner:
     @commands.command(name="reload")
     async def _reload(self, ctx: IceTeaContext, *, extension):
         try:
-            ctx.bot.unload_extension("src.discord.cogs.{0}".format(extension))
-            ctx.bot.load_extension("src.discord.cogs.{0}".format(extension))
+            ctx.bot.unload_extension(extension)
+            ctx.bot.load_extension(extension)
         except Exception as e:
             await ctx.send('\N{PISTOL}')
             await ctx.send('{}: {}'.format(type(e).__name__, e))
