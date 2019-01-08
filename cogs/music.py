@@ -38,8 +38,9 @@ class YoutubeAPI:
 
     async def get_length(self, video_id: str):
         details = await self.get_details(video_id)
-        length = isodate.parse_duration(details['items'][0]['contentDetails']['duration'])
-        return length
+        if isinstance(details, dict):
+            length = isodate.parse_duration(details['items'][0]['contentDetails']['duration'])
+            return length
 
     async def search(self, query: str):
         encoded_query = {"part": "snippet", "q": query, "key": self.api_key}

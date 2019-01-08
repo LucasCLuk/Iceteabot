@@ -143,7 +143,7 @@ class Owner:
     async def load(self, ctx: IceTeaContext, *, cog: str):
         """Loads a module."""
         try:
-            ctx.bot.load_extension(cog)
+            ctx.bot.load_extension(cog.lower())
         except Exception as e:
             await ctx.send('\N{PISTOL}')
             await ctx.send('{}: {}'.format(type(e).__name__, e))
@@ -154,7 +154,7 @@ class Owner:
     async def unload(self, ctx: IceTeaContext, *, cog: str):
         """Unloads a module."""
         try:
-            ctx.bot.unload_extension(cog)
+            ctx.bot.unload_extension(cog.lower())
         except Exception as e:
             await ctx.send('\N{PISTOL}')
             await ctx.send('{}: {}'.format(type(e).__name__, e))
