@@ -5,8 +5,8 @@ import ujson
 from utils.iceteabot import Iceteabot
 
 parser = argparse.ArgumentParser()
-parser.add_argument("name", type=str, help="The name of the bot")
-parser.add_argument("config", type=str, help="Path to config file for the bot")
+parser.add_argument("name", type=str, help="The name of the bot", default="iceteabot")
+parser.add_argument("config", type=str, help="Path to config file for the bot", default="config.json")
 args = parser.parse_args()
 
 if os.path.exists(args.config):
