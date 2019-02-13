@@ -109,7 +109,8 @@ class Iceteabot(commands.Bot):
                     debug_channel = ctx.bot.get_channel(360895354033537029)
                     if debug_channel is not None:
                         await debug_channel.send(embed=embed)
-                    await ctx.send(embed=embed, delete_after=10)
+                    else:
+                        await ctx.send(embed=embed, delete_after=10)
                     try:
                         await ctx.message.clear_reactions()
                         await ctx.message.delete()
