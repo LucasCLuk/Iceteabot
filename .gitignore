@@ -253,3 +253,8 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/python,pycharm,intellij
 config.json
+deploy\.sh
+
+id_rsa
+
+secrets\.tar
