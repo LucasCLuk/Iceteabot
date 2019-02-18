@@ -79,6 +79,12 @@ class Mod:
 
         await ctx.send('\n'.join(messages), delete_after=10)
 
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def purge(self, ctx, limit: int = 100):
+        purged = await ctx.purge(limit)
+        await ctx.send(f"Purged ${len(purged)} Messages")
+
 
 def setup(bot):
     bot.add_cog(Mod(bot))
