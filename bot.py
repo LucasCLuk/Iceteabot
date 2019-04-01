@@ -1,7 +1,7 @@
 import argparse
 import os
 import ujson
-
+import discord
 from utils.iceteabot import Iceteabot
 
 parser = argparse.ArgumentParser()

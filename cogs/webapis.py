@@ -134,7 +134,7 @@ class WebAPIs:
                 return data
 
 
-class Websites:
+class Websites(commands.Cog):
     def __init__(self, bot):
         self.web_apis = WebAPIs(bot)
 

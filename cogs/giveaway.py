@@ -4,7 +4,7 @@ from discord.ext.commands.cooldowns import BucketType
 import random
 
 
-class Giveaway:
+class Giveaway(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.giveaways = {}

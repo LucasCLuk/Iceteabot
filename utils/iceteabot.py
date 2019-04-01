@@ -21,7 +21,7 @@ from utils.paginator import HelpPaginator
 
 class Iceteabot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        self.config: dict = kwargs.pop("config")
+        self.config: dict = kwargs.pop("config",{})
         self.name: str = self.config.get("name", "iceteabot")
         self.version = self.config.get("version", 1.0)
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
@@ -187,16 +187,20 @@ class Iceteabot(commands.Bot):
                 p = await HelpPaginator.from_cog(ctx, entity)
         await p.paginate()
 
+    @staticmethod
     @commands.command(name="hi", aliases=['hello'])
-    async def welcome(self, ctx):
+    async def welcome(ctx):
         """Display's a welcome message"""
         await ctx.send(f"Hello! I am a bot made by {ctx.bot.owner}")
 
+    @staticmethod
     @commands.command(name="prefix")
-    async def _prefix(self, ctx):
+    async def _prefix(ctx):
+        """Display's the bot's default prefix"""
         await ctx.send(f"My Current prefix is {ctx.bot.default_prefix} or you can always mention me.")
 
+    @staticmethod
     @commands.command()
-    async def ping(self, ctx):
+    async def ping(ctx):
         """displays the bot's latency with discord"""
         await ctx.send(f"Current ping is: **{round(ctx.bot.latency, 2)} seconds**")

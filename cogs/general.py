@@ -36,7 +36,7 @@ class TimeParser:
             raise commands.BadArgument('That\'s a bit too far in the future for me.')
 
 
-class General:
+class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
 

@@ -1,8 +1,12 @@
 from discord.ext import commands
-import discord
+
 from utils import form_manager
 
-class Form:
+
+class Form(commands.Cog):
+
+    def __str__(self):
+        return self.__class__.__name__
 
     @commands.command()
     async def startform(self, ctx):

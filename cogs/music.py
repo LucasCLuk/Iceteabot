@@ -211,7 +211,7 @@ class RadioStream(discord.PCMVolumeTransformer):
         await self.finished.wait()
 
 
-class Music:
+class Music(commands.Cog):
     """Voice related commands.
 
     Works in multiple servers at once.
@@ -255,6 +255,7 @@ class Music:
 
         return state
 
+    @commands.Cog.listener()
     async def on_queue_finish(self, state: typing.Union[VoiceState, RadioStream]):
         if isinstance(state, VoiceState):
             if state.ctx.guild.voice_client is not None:

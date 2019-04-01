@@ -1,12 +1,16 @@
 import discord
+from discord.ext import commands
 
 from utils.iceteacontext import IceTeaContext
 
 
-class Events:
+class Events(commands.Cog):
 
-    @staticmethod
-    async def on_command_completion(ctx: IceTeaContext):
+    def __str__(self):
+        return self.__class__.__name__
+
+    @commands.Cog.listener()
+    async def on_command_completion(self,ctx: IceTeaContext):
         if not isinstance(ctx.channel, discord.abc.PrivateChannel):
             ctx.author_command_stats[ctx.command] += 1
 

@@ -8,7 +8,7 @@ from discord.ext import commands
 from utils.iceteacontext import IceTeaContext
 
 
-class Stats:
+class Stats(commands.Cog):
     """Bot usage statistics."""
 
     def __init__(self, bot):
@@ -19,6 +19,7 @@ class Stats:
     def __str__(self):
         return self.__class__.__name__
 
+    @commands.Cog.listener()
     async def on_socket_response(self, msg):
         self.bot.socket_stats[msg.get('t')] += 1
 

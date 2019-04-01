@@ -15,7 +15,7 @@ from utils.iceteacontext import IceTeaContext
 
 
 # The owner class, commands here can only be executed by the owner of the bot
-class Owner:
+class Owner(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
@@ -24,7 +24,7 @@ class Owner:
     def __str__(self):
         return self.__class__.__name__
 
-    async def __local_check(self, ctx: IceTeaContext):
+    async def cog_check(self, ctx):
         return await ctx.bot.is_owner(ctx.author)
 
     def cleanup_code(self, content):

@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 
-class Mod:
+class Mod(commands.Cog):
     """Moderation related commands."""
 
     def __init__(self, bot):
@@ -19,7 +19,7 @@ class Mod:
     def __str__(self):
         return self.__class__.__name__
 
-    async def __error(self, ctx, error):
+    async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send(error)
         elif isinstance(error, commands.CommandInvokeError):

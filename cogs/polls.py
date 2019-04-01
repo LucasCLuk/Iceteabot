@@ -79,7 +79,7 @@ class PollObj:
             return f"{self.empty_char * 10}"
 
 
-class Poll:
+class Poll(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.polls = {}  # type: typing.Dict[int,PollObj]
@@ -93,7 +93,7 @@ class Poll:
     def __str__(self):
         return self.__class__.__name__
 
-    def __unload(self):
+    def cog_unload(self):
         for poll in self.polls.values():
             poll.message_task.cancel()
 
@@ -108,18 +108,21 @@ class Poll:
             return False
         return True
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         if self.reaction_filter(payload):
             poll = self.polls[payload.message_id]
             poll.votes[payload.emoji.name] += 1
             poll._new_votes = True
 
+    @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
         if self.reaction_filter(payload):
             poll = self.polls[payload.message_id]
             poll.votes[payload.emoji.name] -= 1
             poll._new_votes = True
 
+    @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
         if payload.message_id in self.polls:
             data = self.polls.pop(payload.message_id)

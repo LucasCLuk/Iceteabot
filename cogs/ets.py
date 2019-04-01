@@ -20,7 +20,7 @@ class Bus:
         return self.arrival_time == other.arrival_time
 
 
-class ETS:
+class ETS(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.base_url = "https://data.edmonton.ca/resource/"
