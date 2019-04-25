@@ -3,14 +3,16 @@ import asyncio
 import io
 import os
 import textwrap
+import time
 import traceback
-import ujson
 from contextlib import redirect_stdout
 
 import discord
+import ujson
 from discord.ext import commands
 
-from utils import time
+from utils import time as utils_time
+from utils.formats import TabularData, Plural
 from utils.iceteacontext import IceTeaContext
 
 
@@ -19,15 +21,12 @@ class Owner(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.log = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'iceteabot.log')
-
-    def __str__(self):
-        return self.__class__.__name__
 
     async def cog_check(self, ctx):
         return await ctx.bot.is_owner(ctx.author)
 
-    def cleanup_code(self, content):
+    @staticmethod
+    def cleanup_code(content):
         """Automatically removes code blocks from the code."""
         # remove ```py\n```
         if content.startswith('```') and content.endswith('```'):
@@ -36,7 +35,8 @@ class Owner(commands.Cog):
         # remove `foo`
         return content.strip('` \n')
 
-    def get_syntax_error(self, e):
+    @staticmethod
+    def get_syntax_error(e):
         if e.text is None:
             return f'```py\n{e.__class__.__name__}: {e}\n```'
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
@@ -101,6 +101,47 @@ class Owner(commands.Cog):
                     return
                 await ctx.send(f'```py\n{value}{ret}\n```')
 
+    @commands.command(hidden=True)
+    async def sql(self, ctx: "IceTeaContext", *, query: str):
+        """Run some SQL."""
+        # the imports are here because I imagine some people would want to use
+        # this cog as a base for their other cog, and since this one is kinda
+        # odd and unnecessary for most people, I will make it easy to remove
+        # for those people.
+
+        query = self.cleanup_code(query)
+
+        is_multistatement = query.count(';') > 1
+        if is_multistatement:
+            # fetch does not support multiple statements
+            strategy = ctx.bot.sql.pool.execute
+        else:
+            strategy = ctx.bot.sql.pool.fetch
+
+        try:
+            start = time.perf_counter()
+            results = await strategy(query)
+            dt = (time.perf_counter() - start) * 1000.0
+        except Exception:
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+
+        rows = len(results)
+        if is_multistatement or rows == 0:
+            return await ctx.send(f'`{dt:.2f}ms: {results}`')
+
+        headers = list(results[0].keys())
+        table = TabularData()
+        table.set_columns(headers)
+        table.add_rows(list(r.values()) for r in results)
+        render = table.render()
+
+        fmt = f'```\n{render}\n```\n*Returned {Plural(row=rows)} in {dt:.2f}ms*'
+        if len(fmt) > 2000:
+            fp = io.BytesIO(fmt.encode('utf-8'))
+            await ctx.send('Too many results...', file=discord.File(fp, 'results.txt'))
+        else:
+            await ctx.send(fmt)
+
     @commands.command(name="chavatar")
     async def avatar(self, ctx: IceTeaContext, link=None):
         """Edits the bot's avatar. Can only be used by owner can provide a link or attachment"""
@@ -140,10 +181,10 @@ class Owner(commands.Cog):
             await ctx.send("I do not have permissions to edit my name :cry:")
 
     @commands.command(hidden=True)
-    async def load(self, ctx: IceTeaContext, *, cog: str):
+    async def load(self, ctx: IceTeaContext, *, cog_name: str):
         """Loads a module."""
         try:
-            ctx.bot.load_extension(cog.lower())
+            ctx.bot.load_extension(cog_name.lower())
         except Exception as e:
             await ctx.send('\N{PISTOL}')
             await ctx.send('{}: {}'.format(type(e).__name__, e))
@@ -151,10 +192,10 @@ class Owner(commands.Cog):
             await ctx.send('\N{OK HAND SIGN}')
 
     @commands.command(hidden=True)
-    async def unload(self, ctx: IceTeaContext, *, cog: str):
+    async def unload(self, ctx: IceTeaContext, *, cog_name: str):
         """Unloads a module."""
         try:
-            ctx.bot.unload_extension(cog.lower())
+            ctx.bot.unload_extension(cog_name.lower())
         except Exception as e:
             await ctx.send('\N{PISTOL}')
             await ctx.send('{}: {}'.format(type(e).__name__, e))
@@ -166,8 +207,7 @@ class Owner(commands.Cog):
         """Attempts to reload all the cogs at once"""
         for cog in ctx.bot.extensions:
             try:
-                ctx.bot.unload_extension(cog)
-                ctx.bot.load_extension(cog)
+                ctx.bot.reload_extension(cog)
             except Exception as e:
                 await ctx.send('\N{PISTOL}')
                 await ctx.send('{}: {}'.format(type(e).__name__, e))
@@ -184,7 +224,7 @@ class Owner(commands.Cog):
         await ctx.bot.logout()
 
     @commands.command(hidden=True, name="cogstatus", aliases=['cstatus'])
-    async def cog_status(self, ctx: IceTeaContext):
+    async def _cog_status(self, ctx: IceTeaContext):
         """Displays all currently loaded cogs"""
         cog_names = [cog for cog in ctx.bot.extensions]
         msg = "\n".join(cog_names)
@@ -198,10 +238,9 @@ class Owner(commands.Cog):
     @commands.command(name="reload")
     async def _reload(self, ctx: IceTeaContext, *, extension):
         try:
-            ctx.bot.unload_extension(extension)
-            ctx.bot.load_extension(extension)
+            ctx.bot.reload_extension(extension)
         except Exception as e:
-            await ctx.send('\N{PISTOL}')
+            await ctx.send('\N{PISTOL}', delete_after=5)
             await ctx.send('{}: {}'.format(type(e).__name__, e))
         else:
             await ctx.send('\N{OK HAND SIGN}')
@@ -257,20 +296,10 @@ class Owner(commands.Cog):
         e = discord.Embed(title='New Guilds', colour=discord.Colour.green())
 
         for guild in guilds:
-            body = f'Joined {time.human_timedelta(guild.me.joined_at)}'
+            body = f'Joined {utils_time.human_timedelta(guild.me.joined_at)}'
             e.add_field(name=f'{guild.name} (ID: {guild.id})', value=body, inline=False)
 
         await ctx.send(embed=e)
-
-    async def on_raw_reaction_add(self, payload):
-        if payload.emoji.is_unicode_emoji() and self.bot.owner_id is not None:
-            if all([payload.channel_id == 384410040880201730, payload.user_id == self.bot.owner_id,
-                    str(payload.emoji) == "\U0000274c"]):
-                channel = self.bot.get_channel(payload.channel_id)
-                if channel is not None:
-                    message = await channel.get_message(payload.message_id)
-                    if payload.message_id is not None:
-                        await message.delete()
 
 
 def setup(bot):

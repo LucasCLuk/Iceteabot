@@ -1,10 +1,13 @@
+import asyncio
 import random
 import re
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import BucketType, UserInputError
 
 from utils import formats
+from utils.iceteacontext import IceTeaContext
 
 
 class TimeParser:
@@ -39,9 +42,6 @@ class TimeParser:
 class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot  # type: commands.Bot
-
-    def __str__(self):
-        return self.__class__.__name__
 
     @commands.command(name="hug")
     async def hug(self, ctx, target: discord.Member = None):
@@ -130,69 +130,72 @@ class General(commands.Cog):
         elif player_decision > bot_choice or player_decision:
             await ctx.send(f"{ctx.author} WINS!!!")
 
-    #
-    # @commands.group(invoke_without_command=True)
-    # @commands.cooldown(60, 1, BucketType.channel)
-    # async def faq(self, ctx, target: int = None):
-    #     """Display's an embed with the top 20 faqs for the server. FAQs can be added via the subcommand add
-    #     After using this command the user can type a number corresponding to that faq to get the detailed view about it.
-    #     Optionally can provide a number right away to avoid waiting"""
-    #     if len(ctx.guild_data.faqs) == 0:
-    #         return await ctx.send("This guild has no FAQs")
-    #     guild_faqs = sorted(ctx.guild_data.faqs.values(), key=lambda faq: faq.uses)
-    #     try:
-    #         if target is not None:
-    #             target_faq = guild_faqs[target - 1]
-    #             return await target_faq.call(ctx)
-    #     except IndexError:
-    #         return await ctx.send("No faq matching that number")
-    #     embed = discord.Embed(title=f"{ctx.guild} FAQ")
-    #     embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url)
-    #     embed.description = "".join(
-    #         [f":large_blue_diamond: **{index + 1}**. {question} - **({question.uses} Uses)** - ID: {question.id}" for
-    #          index, question
-    #          in
-    #          enumerate(guild_faqs) if index <= 20])
-    #     message = await ctx.send(embed=embed, content="Select a number")
-    #     try:
-    #         def check(m):
-    #             try:
-    #                 is_author = m.author == ctx.author
-    #                 is_channel = m.channel == ctx.channel
-    #                 is_digit = (int(m.content) - 1) < len(guild_faqs) and (int(m.content) - 1) < 20
-    #                 return all([is_author, is_digit, is_channel])
-    #             except ValueError:
-    #                 return False
-    #
-    #         response = await ctx.bot.wait_for("message", check=check, timeout=60)
-    #         target_faq = guild_faqs[int(response.content) - 1]
-    #         await target_faq.call(ctx)
-    #     except asyncio.TimeoutError:
-    #         await message.edit(embed=None, content="Ran out of time", delete_after=15)
-    #
-    # @faq.command()
-    # @commands.has_permissions(manage_guild=True)
-    # async def add(self, ctx, *, question):
-    #     """Registers a FAQ for this server, requires manage server permissions"""
-    #     await ctx.send("Alright, now put the answer")
-    #     answer = await ctx.bot.wait_for("message",
-    #                                     check=lambda
-    #                                         message: ctx.author == message.author and ctx.channel == message.channel)
-    #     new_faq = await ctx.guild_data.add_faq(ctx, question, answer.content)
-    #     if new_faq:
-    #         await ctx.send("Successfully added Question to the FAQ")
-    #     else:
-    #         await ctx.send("Sorry, something went wrong during processing, please try again later", delete_after=15)
-    #
-    # @faq.command(name="delete")
-    # @commands.has_permissions(manage_guild=True)
-    # async def deletefaq(self, ctx, *, target):
-    #     """Deletes a FAQ, can use the ID of the faq or the question itself"""
-    #     try:
-    #         response = await ctx.guild_data.delete_faq(target)
-    #         await ctx.send("<a:thumpsup:445250162877661194>")
-    #     except UserInputError as e:
-    #         await ctx.send(e, delete_after=20)
+    @commands.group(invoke_without_command=True)
+    @commands.cooldown(60, 1, BucketType.channel)
+    async def faq(self, ctx, target: int = None):
+        """Display's an embed with the top 20 faqs for the server. FAQs can be added via the subcommand add
+        After using this command the user can type a number corresponding to that faq to get the detailed view about it.
+        Optionally can provide a number right away to avoid waiting"""
+        if len(ctx.guild_data.faqs) == 0:
+            return await ctx.send("This guild has no FAQs")
+        guild_faqs = sorted(ctx.guild_data.faqs.values(), key=lambda faq: faq.uses)
+        try:
+            if target is not None:
+                target_faq = guild_faqs[target - 1]
+                return await target_faq.call(ctx)
+        except IndexError:
+            return await ctx.send("No faq matching that number")
+        embed = discord.Embed(title=f"{ctx.guild} FAQ")
+        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url)
+        embed.description = "".join(
+            [f":large_blue_diamond: **{index + 1}**. {question} - **({question.uses} Uses)** - ID: {question.id}" for
+             index, question
+             in
+             enumerate(guild_faqs) if index <= 20])
+        message = await ctx.send(embed=embed, content="Select a number")
+        try:
+            def check(m):
+                try:
+                    is_author = m.author == ctx.author
+                    is_channel = m.channel == ctx.channel
+                    is_digit = (int(m.content) - 1) < len(guild_faqs) and (int(m.content) - 1) < 20
+                    return all([is_author, is_digit, is_channel])
+                except ValueError:
+                    return False
+
+            response = await ctx.bot.wait_for("message", check=check, timeout=60)
+            target_faq = guild_faqs[int(response.content) - 1]
+            await target_faq.call(ctx)
+        except asyncio.TimeoutError:
+            await message.edit(embed=None, content="Ran out of time", delete_after=15)
+
+    @faq.command()
+    @commands.has_permissions(manage_guild=True)
+    async def add(self, ctx: "IceTeaContext", *, question):
+        """Registers a FAQ for this server, requires manage server permissions"""
+        await ctx.send("Alright, now put the answer")
+        try:
+            answer = await ctx.bot.wait_for("message",
+                                            check=lambda
+                                                message: ctx.author == message.author and ctx.channel == message.channel,
+                                            timeout=300)
+            new_faq = await ctx.guild_data.add_faq(ctx, question, await ctx.clean_content(answer.content))
+            if new_faq:
+                await ctx.send("Successfully added Question to the FAQ")
+            else:
+                await ctx.send("Sorry, something went wrong during processing, please try again later", delete_after=15)
+        except asyncio.TimeoutError:
+            await ctx.send("Sorry, you took to long to answer.")
+
+    @faq.command(name="delete")
+    @commands.has_permissions(manage_guild=True)
+    async def deletefaq(self, ctx, *, target):
+        """Deletes a FAQ, can use the ID of the faq or the question itself"""
+        try:
+            await ctx.guild_data.delete_faq(target)
+            await ctx.send("<a:thumpsup:445250162877661194>")
+        except UserInputError as e:
+            await ctx.send(e, delete_after=20)
 
 
 def setup(bot):

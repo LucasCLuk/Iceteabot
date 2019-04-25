@@ -69,7 +69,6 @@ class FormManager:
             except Exception as e:
                 # if any of the tasks died for any reason,
                 #  the exception will be replayed here.
-                print(e)
                 pass
 
             for future in pending:

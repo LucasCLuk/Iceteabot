@@ -11,6 +11,8 @@ class WebAPIs:
     def __init__(self, bot):
         self.bot = bot
         self.oxford_data = bot.config['api_keys']['oxford']
+        self.mash_shape_key = bot.config['api_keys']['mashshape']
+        self.weather_key = bot.config['api_keys']['weather']
 
     async def getfortune(self):
         async with self.bot.aioconnection.get("http://www.fortunecookiemessage.com/") as response:
@@ -61,7 +63,7 @@ class WebAPIs:
 
         async with self.bot.aioconnection.get(
                 "https://mashape-community-urban-dictionary.p.mashape.com/define?term={0}".format(word),
-                headers={"X-Mashape-Key": "Rf5qdiAbQvmsh8qAzGmikOoVMrqkp1EEo3sjsnb7KtG3P4T4eT",
+                headers={"X-Mashape-Key": self.mash_shape_key,
                          "Accept": "text/plain",
                          "X-Mashape-Host": "mashape-community-urban-dictionary.p.mashape.com"}) as response:
             # Checks if the response status is 200 AKA all gud
@@ -110,7 +112,7 @@ class WebAPIs:
                 raise aiohttp.ClientResponseError
 
     async def get_weather(self, location):
-        params = {"q": location, "units": "metric", "APPID": self.bot.config['api_keys']['weather']}
+        params = {"q": location, "units": "metric", "APPID": self.weather_key}
         url = f"http://api.openweathermap.org/data/2.5/weather"
         async with self.bot.aioconnection.get(
                 url, params=params) as response:
@@ -119,7 +121,7 @@ class WebAPIs:
                 return data
 
     async def get_forecast(self, location):
-        params = {"q": location, "units": "metric", "APPID": self.bot.config['api_keys']['weather']}
+        params = {"q": location, "units": "metric", "APPID": self.weather_key}
         url = "https://api.openweathermap.org/data/2.5/forecast"
         async with self.bot.aioconnection.get(url, params=params) as response:
             if response.status == 200:
@@ -137,9 +139,6 @@ class WebAPIs:
 class Websites(commands.Cog):
     def __init__(self, bot):
         self.web_apis = WebAPIs(bot)
-
-    def __str__(self):
-        return self.__class__.__name__
 
     @commands.command()
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -182,7 +181,7 @@ class Websites(commands.Cog):
             comic = await self.web_apis.xkcd_grab_newest()
         await ctx.send(comic['img'])
 
-    @commands.command()
+    @commands.command(enabled=False)
     @commands.cooldown(5, 15, type=commands.BucketType.user)
     async def define(self, ctx, *, word):
         """Defines a word from the Oxford dictionary"""

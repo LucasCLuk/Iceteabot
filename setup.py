@@ -1,12 +1,13 @@
 import argparse
+import asyncio
 import os
 
+import asyncpg
 import ujson
 
-from utils.iceteabot import Iceteabot
+from database.sqlclient import SqlClient
 
 parser = argparse.ArgumentParser()
-parser.add_argument("name", type=str, help="The name of the bot", default="iceteabot")
 parser.add_argument("config", type=str, help="Path to config file for the bot", default="config.json")
 args = parser.parse_args()
 
@@ -16,7 +17,12 @@ if os.path.exists(args.config):
 else:
     raise FileNotFoundError("Config file not found")
 
-bot = Iceteabot(config=config)
+
+async def create_tables():
+    pool = await asyncpg.create_pool(**config['database'])
+    client = SqlClient(pool)
+    await client.setup()
+
 
 if __name__ == '__main__':
-    bot.run()
+    asyncio.run(create_tables())

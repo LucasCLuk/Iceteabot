@@ -25,8 +25,6 @@ class ETS(commands.Cog):
         self.bot = bot
         self.base_url = "https://data.edmonton.ca/resource/"
 
-    def __str__(self):
-        return self.__class__.__name__
 
     async def get_stop_times(self, stop_id: int):
         schedule = []

@@ -5,9 +5,6 @@ from utils import form_manager
 
 class Form(commands.Cog):
 
-    def __str__(self):
-        return self.__class__.__name__
-
     @commands.command()
     async def startform(self, ctx):
         questions = [form_manager.Question("How do you do today?", key="hello0"),

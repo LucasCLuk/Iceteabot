@@ -1,7 +1,9 @@
-from collections import Counter, defaultdict
+from collections import Counter
 
 import discord
 from discord.ext import commands
+
+from utils.iceteacontext import IceTeaContext
 
 
 class Mod(commands.Cog):
@@ -10,16 +12,7 @@ class Mod(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        # _guild_id: set(user_id)
-        self._recently_kicked = defaultdict(set)
-
-    def __repr__(self):
-        return '<cogs.Mod>'
-
-    def __str__(self):
-        return self.__class__.__name__
-
-    async def cog_command_error(self, ctx, error):
+    async def cog_command_error(self, ctx: "IceTeaContext", error):
         if isinstance(error, commands.BadArgument):
             await ctx.send(error)
         elif isinstance(error, commands.CommandInvokeError):
@@ -30,7 +23,7 @@ class Mod(commands.Cog):
                 await ctx.send('Somehow, an unexpected error occurred. Try again later?')
 
     @staticmethod
-    async def _basic_cleanup_strategy(ctx, search):
+    async def _basic_cleanup_strategy(ctx: "IceTeaContext", search):
         count = 0
         async for msg in ctx.history(limit=search, before=ctx.message):
             if msg.author == ctx.me:
@@ -39,19 +32,20 @@ class Mod(commands.Cog):
         return {'Bot': count}
 
     @staticmethod
-    async def _complex_cleanup_strategy(ctx, search):
-        guild_data = await ctx.guild_data()
+    async def _complex_cleanup_strategy(ctx: "IceTeaContext", search):
+        guild_data = ctx.guild_data
         prefixes = [key for key in guild_data.prefixes.keys()]
 
         def check(m):
-            return m.author == ctx.me or any([m.content.startswith(prefix) for prefix in prefixes])
+            return m.author == ctx.me or any(
+                [m.content.startswith(prefix) for prefix in prefixes]) or m.content.startswith(ctx.me.mention)
 
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
-    async def cleanup(self, ctx, search=100):
+    async def cleanup(self, ctx: "IceTeaContext", search=100):
         """Cleans up the bot's messages from the channel.
 
         If a search number is specified, it searches that many messages to delete.
@@ -81,8 +75,9 @@ class Mod(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
-    async def purge(self, ctx, limit: int = 100):
-        purged = await ctx.purge(limit)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge(self, ctx: "IceTeaContext", limit: int = 100):
+        purged = await ctx.channel.purge(limit=limit)
         await ctx.send(f"Purged ${len(purged)} Messages")
 
 

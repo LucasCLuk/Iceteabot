@@ -7,5 +7,9 @@ parsedatetime
 python-dateutil
 timeago
 pytz
-git+https://github.com/Rapptz/discord.py@rewrite
+discord.py
 ujson
+asyncpg
+sentry-sdk
+aiocontextvars
+uvloop

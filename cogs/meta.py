@@ -5,6 +5,7 @@ import discord
 import psutil
 from discord.ext import commands
 
+from database import models
 from utils.iceteacontext import IceTeaContext
 
 
@@ -15,9 +16,6 @@ class Stats(commands.Cog):
         self.bot = bot
         self.process = psutil.Process()
         self.medals = ["\U0001f947", "\U0001F948", "\U0001F949", "\U0001f3c5", "\U0001f3c5"]
-
-    def __str__(self):
-        return self.__class__.__name__
 
     @commands.Cog.listener()
     async def on_socket_response(self, msg):
@@ -77,8 +75,8 @@ class Stats(commands.Cog):
         embed.colour = ctx.me.top_role.color
         owner = ctx.bot.owner
         embed.set_thumbnail(url=ctx.me.avatar_url)
-        guild_commands_used = f"{ctx.guild_commands_used_count:,}"
-        total_commands_used = f"{ctx.total_commands_used_count:,}"
+        guild_commands_used = f"{await ctx.guild_data.get_total_commands_used():,}"
+        total_commands_used = f"{await ctx.bot.sql.get_total_commands_used():,}"
         embed.set_author(name=str(owner), icon_url=owner.avatar_url)
 
         # statistics
@@ -113,111 +111,47 @@ class Stats(commands.Cog):
         bot_invite_link = discord.utils.oauth_url(ctx.bot.client_id)
         await ctx.send(f"Invite Link: <{bot_invite_link}>")
 
-    def _get_user(self, ctx, user):
+    @staticmethod
+    def _get_user(ctx, user):
         member = ctx.guild.get_member(int(user))
         if member:
             return member.mention
         else:
-            return "N/A"
+            return f"<@{user}>"
 
-    # async def get_todays_stats(self, ctx):
-    #     today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    #     tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).strftime("%Y-%m-%d")
-    #     payload = await self.bot.fetch_data(f"guilds/{ctx.guild.id}/commandcall/by-date",
-    #                                         data={"before": tomorrow, "after": today})
-    #     total_commands_used = 0
-    #     top_commands = Counter()
-    #     top_command_callers = Counter()
-    #     for author, cmdcalls in payload.items():
-    #         total_commands_used += sum(cmdcalls.values())
-    #         top_command_callers[author] += sum(cmdcalls.values())
-    #         for command, usage in cmdcalls.items():
-    #             top_commands[command] += usage
-    #     top_commands_msg = ["{0} : {1} ({2:,} uses)".format(medal, command, top_commands[command]) for medal, command,
-    #                         in
-    #                         zip(self.medals, top_commands)]
-    #     top_command_users_msg = [
-    #         "{0} : {1} ({2:,} uses)".format(medal, self._get_user(ctx, user), count)
-    #         for
-    #         medal, (user, count) in zip(self.medals, top_command_callers.most_common()) if
-    #         ctx.guild.get_member(int(user))]
-    #     return top_commands_msg, top_command_users_msg
-    #
-    # async def get_command_stats(self, ctx, embed):
-    #     payload = await self.bot.fetch_data(f"guilds/{ctx.guild.id}/commandcall/by-user")
-    #     total_commands_used = 0
-    #     top_commands = Counter()
-    #     top_command_callers = Counter()
-    #     for author, cmdcalls in payload.items():
-    #         total_commands_used += sum(cmdcalls.values())
-    #         top_command_callers[author] += sum(cmdcalls.values())
-    #         for command, usage in cmdcalls.items():
-    #             top_commands[command] += usage
-    #     embed.description = f"{total_commands_used:,} Commands Used"
-    #     top_commands_msg = ["{0} : {1} ({2:,} uses)".format(medal, command, uses) for medal, (command, uses)
-    #                         in
-    #                         zip(self.medals, top_commands.most_common())]
-    #     top_command_users_msg = [
-    #         "{0} : {1} ({2:,} uses)".format(medal, self._get_user(ctx, user), count)
-    #         for
-    #         medal, (user, count) in zip(self.medals, top_command_callers.most_common()) if
-    #         ctx.guild.get_member(int(user))]
-    #     return top_commands_msg, top_command_users_msg
-    #
-    # @commands.group(invoke_without_command=True)
-    # async def stats(self, ctx):
-    #     """Display's command usage stats for the guild"""
-    #     embed = discord.Embed(title=f"{ctx.guild.name} Command Usage Stats")
-    #     top_commands, top_users = await self.get_command_stats(ctx, embed)
-    #     today_commands, today_users = await self.get_todays_stats(ctx)
-    #     embed.add_field(name="Top Commands", value="\n".join(top_commands))
-    #     embed.add_field(name="Top Commands Today", value="\n".join(today_commands or ["N/A"]))
-    #     embed.add_field(name="Top Command Users", value="\n".join(top_users), inline=False)
-    #     embed.add_field(name="Top Command Users Today", value="\n".join(today_users or ['N/A']), inline=False)
-    #     await ctx.send(embed=embed)
-    #
-    # @stats.command(name="global")
-    # async def _global(self, ctx):
-    #     today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    #     tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).strftime("%Y-%m-%d")
-    #     payload = await self.bot.fetch_data(f"commandcall/by-user")
-    #     todays_commands = await self.bot.fetch_data(f"commandcall/by-date", data={"before": tomorrow, "after": today})
-    #     embed = discord.Embed(title=f"Global Command Usage Stats")
-    #     total_commands_used = 0
-    #     top_commands = Counter()
-    #     top_command_callers = Counter()
-    #     top_commands_today = Counter()
-    #     top_commands_today_callers = Counter()
-    #     for author, cmdcalls in todays_commands.items():
-    #         top_commands_today_callers[author] += sum(cmdcalls.values())
-    #         for command, usage in cmdcalls.items():
-    #             top_commands_today[command] += usage
-    #     for author, cmdcalls in payload.items():
-    #         total_commands_used += sum(cmdcalls.values())
-    #         top_command_callers[author] += sum(cmdcalls.values())
-    #         for command, usage in cmdcalls.items():
-    #             top_commands[command] += usage
-    #     embed.description = f"{total_commands_used:,} Commands Used"
-    #     top_commands_msg = ["{0} : {1} ({2:,} uses)".format(medal, command, uses) for medal, (command, uses)
-    #                         in
-    #                         zip(self.medals, top_commands.most_common())]
-    #     top_command_users_msg = [
-    #         "{0} : {1} ({2:,} uses)".format(medal, ctx.bot.get_user(int(user)), command) for
-    #         medal, (user, command) in zip(self.medals, top_command_callers.most_common()) if
-    #         ctx.bot.get_user(int(user))]
-    #     top_commands_today_msg = ["{0} : {1} ({2:,} uses)".format(medal, command, uses) for medal, (command, uses)
-    #                               in
-    #                               zip(self.medals, top_commands_today.most_common())]
-    #     top_commands_today_users_msg = [
-    #         "{0} : {1} ({2:,} uses)".format(medal, self.bot.get_user(int(user)), uses) for
-    #         medal, (user, uses)
-    #         in
-    #         zip(self.medals, top_commands_today_callers.most_common()) if ctx.bot.get_user(int(user))]
-    #     embed.add_field(name="Top Commands", value="\n".join(top_commands_msg))
-    #     embed.add_field(name="Top Command Users", value="\n".join(top_command_users_msg))
-    #     embed.add_field(name="Top Commands Today", value="\n".join(top_commands_today_msg or ["N/A"]), inline=False)
-    #     embed.add_field(name="Top Command Callers Today", value="\n".join(top_commands_today_users_msg or ["N/A"]))
-    #     await ctx.send(embed=embed)
+    def command_stats_embed_builder(self, ctx, command_stats: models.CommandStats,
+                                    title: str) -> discord.Embed:
+        embed = discord.Embed(title=title)
+        embed.colour = ctx.author.top_role.color
+        embed.description = f"""{command_stats.total_commands_used} Commands Used\n
+                                {command_stats.total_commands_used_today} Commands Used Today"""
+        embed.add_field(name="Top Commands", value="\n".join(
+            f"{self.medals[index]} : {command} ({usage:,} uses)" for index, (command, usage) in
+            enumerate(command_stats.top_commands.items())))
+        embed.add_field(name="Top Commands Today", value="\n".join(
+            f"{self.medals[index]} : {command} ({usage:,} uses)" for index, (command, usage) in
+            enumerate(command_stats.top_commands_today.items())))
+        embed.add_field(name="Top Command Users", value="\n".join(
+            f"{self.medals[index]} : {self._get_user(ctx, author)} ({usage:,} uses)" for index, (author, usage) in
+            enumerate(command_stats.top_command_users.items())), inline=False)
+        embed.add_field(name="Top Command Users Today", value="\n".join(
+            f"{self.medals[index]} : {self._get_user(ctx, author)} ({usage:,} uses)" for index, (author, usage) in
+            enumerate(command_stats.top_command_users_today.items())))
+        return embed
+
+    @commands.group(invoke_without_command=True)
+    async def stats(self, ctx: "IceTeaContext"):
+        """Display's command usage stats for the guild"""
+        guild_data = ctx.guild_data
+        command_stats = await guild_data.get_command_stats()
+        embed = self.command_stats_embed_builder(ctx, command_stats, f"{ctx.guild.name} Command Usage Stats")
+        await ctx.send(embed=embed)
+
+    @stats.command(name="global")
+    async def _global(self, ctx):
+        command_stats = await ctx.bot.sql.get_command_stats()
+        embed = self.command_stats_embed_builder(ctx, command_stats, f"Global Command Usage")
+        await ctx.send(embed=embed)
 
 
 def setup(bot):

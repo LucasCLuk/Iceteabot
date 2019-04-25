@@ -22,14 +22,14 @@ class PollObj:
         self._new_votes = False
         self.message = kwargs.get('message')
         self.author = kwargs.get('author')
-        self.closed = kwargs.get('status', False)
+        self.is_closed = kwargs.get('status', False)
         self.ctx = kwargs.get('ctx')
         self.id = kwargs.get('id')
         self.created = datetime.utcnow()
         self.message_task: asyncio.Task = self.ctx.bot.loop.create_task(self.message_editor_task())
 
     async def message_editor_task(self):
-        while not self.closed:
+        while not self.is_closed:
             if self._new_votes:
                 await self.ctx.bot.http.edit_message(self.message.id, self.ctx.channel.id,
                                                      embed=self.embed_builder())
@@ -89,9 +89,6 @@ class Poll(commands.Cog):
                                 '\u0039\u20E3', '\U0001F51F']
         self.empty_char = u"\u2591"
         self.filled_char = u"\u2588"
-
-    def __str__(self):
-        return self.__class__.__name__
 
     def cog_unload(self):
         for poll in self.polls.values():
@@ -190,7 +187,7 @@ class Poll(commands.Cog):
             if polobj.author != ctx.author:
                 return
             if all([polobj is not None, message_id is not None]):
-                polobj.closed = True
+                polobj.is_closed = True
                 self.polls[message_id].message_task.cancel()
                 del self.polls[message_id]
                 try:

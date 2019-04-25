@@ -151,8 +151,7 @@ class Pages:
 
     async def numbered_page(self):
         """lets you type a page number to go to"""
-        to_delete = []
-        to_delete.append(await self.channel.send('What page do you want to go to?'))
+        to_delete = [await self.channel.send('What page do you want to go to?')]
 
         def message_check(m):
             return m.author == self.author and \
@@ -180,9 +179,9 @@ class Pages:
 
     async def show_help(self):
         """shows this message"""
-        messages = ['Welcome to the interactive paginator!\n']
-        messages.append('This interactively allows you to see pages of text by navigating with ' \
-                        'reactions. They are as follows:\n')
+        messages = ['Welcome to the interactive paginator!\n',
+                    'This interactively allows you to see pages of text by navigating with ' \
+                    'reactions. They are as follows:\n']
 
         for (emoji, func) in self.reaction_emojis:
             messages.append(f'{emoji} {func.__doc__}')
@@ -566,7 +565,7 @@ class CommandStatsPaginator(Pages):
 
         self.embed.clear_fields()
         self.embed.description = f"Iceteabot Command Stats for guild {self.guild.name}. Page {page}/{self.maximum_pages}\n" \
-                                 f"Used Commands: {self.total}"
+            f"Used Commands: {self.total}"
         self.embed.set_author(name=self.author, icon_url=self.author.avatar_url)
         self.embed.colour = 0x58D68D
 
@@ -608,11 +607,11 @@ class OsuHistoryPaginator(Pages):
         self.embed.title = f"{beat_map_data[0].title}"
         self.embed.set_author(name=self.author, icon_url=self.author.avatar_url)
         self.embed.colour = 0x58D68D
-        self.embed.add_field(name="\u200b",
-                             value=f"**Score**:{int(entry.score):,}\n"
-                                   f"**Highest Combo**: {entry.maxcombo}\n"
-                                   f"**Played**:{timeago.format(play_date,now=datetime.datetime.now(datetime.timezone.utc))}\n"
-                                   f"**Rank**: {entry.rank}")
+        self.embed.add_field(name="\u200b", value=f"""**Score**:{int(entry.score):,}
+                                                  **Highest Combo**: {entry.maxcombo}
+                                                  Played**:{timeago.format(play_date, now=datetime.datetime.now(
+            datetime.timezone.utc))}
+                                                  **Rank**: {entry.rank}""")
         self.embed.timestamp = entry.date.replace(tzinfo=pytz.timezone("Australia/Perth"))
 
         if not self.paginating:
@@ -652,8 +651,8 @@ class OsuBestPaginator(Pages):
         self.embed.colour = 0x58D68D
         self.embed.add_field(name="\u200b",
                              value=f"{float(beat_map_data[0].difficultyrating):.2f} \U0001f31f\n"
-                                   f"{beat_map_data[0].bpm} BPM\n"
-                                   f"{beat_map_data[0].version} Difficulty\n", inline=False)
+                             f"{beat_map_data[0].bpm} BPM\n"
+                             f"{beat_map_data[0].version} Difficulty\n", inline=False)
         self.embed.timestamp = entry.date.replace(tzinfo=pytz.timezone("Australia/Perth"))
 
         if not self.paginating:
@@ -673,6 +672,7 @@ class OsuBestPaginator(Pages):
             await self.message.add_reaction(reaction)
 
 
+# noinspection PyAttributeOutsideInit
 class TaskPaginator(Pages):
 
     async def show_page(self, page, *, first=False):

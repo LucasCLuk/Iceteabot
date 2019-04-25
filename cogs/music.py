@@ -3,13 +3,15 @@ import datetime
 import os
 import re
 import typing
-import ujson
 
 import discord
 import isodate
+import ujson
 import youtube_dl
 from bs4 import BeautifulSoup
 from discord.ext import commands
+
+from utils.iceteacontext import IceTeaContext
 
 
 async def bot_administrator(ctx):
@@ -112,17 +114,17 @@ class Song:
 
 # noinspection PyMissingConstructor
 class VoiceState(discord.PCMVolumeTransformer):
-    def __init__(self, bot, ctx):
+    def __init__(self, ctx: "IceTeaContext"):
         self.choosing = False
         self.results = []
         self.choosing_message = None
         self.current = None
         self.voice = None
-        self.bot = bot
+        self.bot = ctx.bot
         self.repeating = False
         self.play_next_song = asyncio.Event()
         self.songs = asyncio.Queue()
-        self.audio_player: asyncio.Task = None
+        self.audio_player: typing.Optional[asyncio.Task] = None
         self.ctx = ctx
         self.playlist_que = asyncio.Queue()
         self.playlist_processor_task = None
@@ -222,22 +224,18 @@ class Music(commands.Cog):
         self.bot = bot
         self.youtube = YoutubeAPI(bot)
         self.youtube_dl_options = self.bot.config['youtube_dl_options']
-        self.voice_states = {}
+        self.voice_states: typing.Dict[int, VoiceState] = {}
         try:
             with open(os.path.join('data', 'stations.json')) as file:
                 self.stations = ujson.load(file)
         except Exception:
             self.stations = None
 
-    def __str__(self):
-        return self.__class__.__name__
-
-    @staticmethod
-    async def __local_check(ctx):
+    async def cog_check(self, ctx):
         guild_data = ctx.guild_data
         return guild_data.premium
 
-    def __unload(self):
+    def cog_unload(self):
         for item in self.voice_states.values():
             item.playlist_processor_task.cancel()
             item.audio_player.cancel()
@@ -250,7 +248,7 @@ class Music(commands.Cog):
     def get_voice_state(self, ctx):
         state = self.voice_states.get(ctx.guild.id)
         if state is None:
-            state = VoiceState(self.bot, ctx)
+            state = VoiceState(ctx)
             self.voice_states[ctx.guild.id] = state
 
         return state
@@ -584,16 +582,6 @@ class Music(commands.Cog):
             await ctx.send(msg.format(get_time(total_length)))
         else:
             await ctx.send("No items in Queue")
-
-    @commands.command(hidden=True)
-    async def radio(self, ctx, *, station: str):
-        if station in self.stations:
-            self.voice_states[ctx.guild.id] = RadioStream(
-                station=station,
-                author=ctx.author,
-                bot=ctx.bot,
-                ctx=ctx
-            )
 
 
 def setup(bot):
