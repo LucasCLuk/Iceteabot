@@ -17,7 +17,14 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        await self.bot.sql.add_guild(guild)
+        try:
+            await self.bot.sql.add_guild(guild)
+        except:
+            pass
+        try:
+            await self.bot.update_discord_bots()
+        except:
+            pass
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
@@ -25,26 +32,29 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        guild_data: models.Guild = self.bot.guild_data[member.guild.id]
-        await guild_data.add_member(member.id)
-        join_channel = self.bot.get_channel(guild_data.welcome_channel)
-        if join_channel:
-            if guild_data.welcome_message:
-                await join_channel.send(guild_data.welcome_message)
+        if not member.bot:
+            guild_data: models.Guild = self.bot.guild_data[member.guild.id]
+            await guild_data.add_member(member.id)
+            join_channel = self.bot.get_channel(guild_data.welcome_channel)
+            if join_channel:
+                if guild_data.welcome_message:
+                    await join_channel.send(guild_data.welcome_message)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        guild_data: models.Guild = self.bot.guild_data[member.guild.id]
-        await guild_data.remove_member(member.id)
-        leaving_channel = self.bot.get_channel(guild_data.leaving_channel)
-        if leaving_channel:
-            if guild_data.leaving_message:
-                await leaving_channel.send(guild_data.leaving_message)
+        if not member.bot:
+            guild_data: models.Guild = self.bot.guild_data[member.guild.id]
+            await guild_data.remove_member(member.id)
+            leaving_channel = self.bot.get_channel(guild_data.leaving_channel)
+            if leaving_channel:
+                if guild_data.leaving_message:
+                    await leaving_channel.send(guild_data.leaving_message)
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if before.nick != after.nick and after.nick is not None:
-            await self.bot.guild_data[after.guild.id].add_member_nickname(after.id, after.nick)
+        if not before.bot:
+            if before.nick != after.nick and after.nick is not None:
+                await self.bot.guild_data[after.guild.id].add_member_nickname(after.id, after.nick)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

@@ -266,3 +266,10 @@ class Iceteabot(commands.Bot):
     async def _create_user_data(ctx: "IceTeaContext"):
         await ctx.guild_data.add_member(ctx.author.id)
         ctx.author_data = await ctx.get_user_data(ctx.author)
+
+    async def update_discord_bots(self) -> bool:
+        async with self.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
+                                           headers={"Authorization": self.config['api_keys']['d_bots']},
+                                           json={"server_count": len(self.guilds)}) as response:
+            if response.status == 200:
+                return True

@@ -278,11 +278,9 @@ class Owner(commands.Cog):
     @commands.command(name="updatedbots")
     async def update_dbots(self, ctx: IceTeaContext):
         """Sends an update request to discordbots"""
-        async with ctx.bot.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
-                                              headers={"Authorization": ctx.bot.config['api_keys']['d_bots']},
-                                              json={"server_count": len(ctx.bot.guilds)}) as response:
-            if response.status == 200:
-                await ctx.message.add_reaction("\u2705")
+        response = await ctx.bot.update_discord_bots()
+        if response == 200:
+            await ctx.message.add_reaction("\u2705")
 
     @commands.command()
     async def newguilds(self, ctx: IceTeaContext, *, count=5):
