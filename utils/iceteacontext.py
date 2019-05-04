@@ -25,10 +25,10 @@ class IceTeaContext(Context):
     @property
     def guild_data(self) -> "models.Guild":
         if self.guild:
-            return self.bot.guild_data[self.guild.id]
+            return self.bot.get_guild_data(self.guild.id)
 
     def get_guild_data(self, guild: int = None) -> "models.Guild":
-        return self.bot.guild_data[guild]
+        return self.bot.get_guild_data(guild)
 
     async def get_user_data(self, user: typing.Union[discord.Member, discord.User]) -> typing.Union[
         "models.Member", "models.User"]:

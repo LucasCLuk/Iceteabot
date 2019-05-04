@@ -39,7 +39,7 @@ class Iceteabot(commands.Bot):
         self.aioconnection: ClientSession = ClientSession(json_serialize=ujson.dumps, loop=self.loop)
         self._database_loaded = asyncio.Event(loop=self.loop)
         self.sql: typing.Optional[SqlClient] = None
-        self.guild_data: typing.Dict[int, models.Guild] = {}
+        self._guild_data: typing.Dict[int, models.Guild] = {}
         self.logger: typing.Optional[logging.Logger] = None
         self.error_logger: typing.Optional[logging.Logger] = None
         self.data_base_built = False
@@ -176,6 +176,7 @@ class Iceteabot(commands.Bot):
             return
 
     async def setup_database(self):
+        # noinspection PyBroadException
         try:
             self.sql = SqlClient(await asyncpg.create_pool(**self.config['database']), self)
             await self.sql.setup()
@@ -183,12 +184,10 @@ class Iceteabot(commands.Bot):
             exit(1)
         await self.sql.add_users(self.users)
         guilds = await self.sql.get_all_guilds()
-        self.guild_data.update({guild.id: guild for guild in guilds})
+        self._guild_data.update({guild.id: guild for guild in guilds})
         for guild in self.guilds:
-            if guild.id not in self.guild_data:
-                new_guild = models.Guild(self.sql, guild.id)
-                self.guild_data[guild.id] = new_guild
-                await new_guild.save()
+            if guild.id not in self._guild_data:
+                await self.add_guild(guild)
         self._database_loaded.set()
         self.data_base_built = True
 
@@ -273,3 +272,16 @@ class Iceteabot(commands.Bot):
                                            json={"server_count": len(self.guilds)}) as response:
             if response.status == 200:
                 return True
+
+    def get_guild_data(self, gid: int):
+        return self._guild_data.get(gid)
+
+    async def add_guild(self, guild: discord.Guild) -> models.Guild:
+        new_guild = models.Guild(client=self.sql, id=guild.id)
+        await new_guild.save()
+        self._guild_data[guild.id] = new_guild
+        return new_guild
+
+    async def remove_guild(self, guild_id: int):
+        old_guild = self._guild_data.pop(guild_id)
+        await old_guild.delete()

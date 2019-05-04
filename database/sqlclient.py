@@ -96,12 +96,6 @@ class SqlClient:
             if response:
                 return models.User(client=self, **dict(response))
 
-    async def add_guild(self, guild: discord.Guild) -> models.Guild:
-        new_guild = models.Guild(client=self, id=guild.id)
-        await new_guild.save()
-        self.bot.guild_data[guild.id] = new_guild
-        return new_guild
-
     async def get_guild(self, pid: int) -> models.Guild:
         async with self.pool.acquire() as connection:
             response = await connection.fetchrow("SELECT * FROM guilds where id = $1", pid)
@@ -116,10 +110,6 @@ class SqlClient:
             await guild.get_data()
             guilds.append(guild)
         return guilds
-
-    async def remove_guild(self, guild_id: int):
-        old_guild = self.bot.guild_data.pop(guild_id)
-        await old_guild.delete()
 
     async def update(self, model: models.Model):
         model_table = models.tables[type(model)]
@@ -141,6 +131,7 @@ class SqlClient:
 
     async def delete(self, model: models.Model):
         model_table = models.tables[type(model)]
+        # noinspection SqlResolve
         query = f"DELETE FROM {model_table} WHERE id = $1"
         await self.execute(query, model.id)
 

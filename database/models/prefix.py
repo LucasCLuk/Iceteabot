@@ -24,3 +24,7 @@ class Prefix(Model):
                'uses integer,' \
                'created timestamp, ' \
                'unique(guild,prefix));'
+
+    async def use(self):
+        self.uses += 1
+        await self.client.execute("UPDATE prefixes SET uses = uses + 1 WHERE id = $1", self.id)

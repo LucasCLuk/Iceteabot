@@ -18,7 +18,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         try:
-            await self.bot.sql.add_guild(guild)
+            await self.bot.add_guild(guild)
         except:
             pass
         try:
@@ -28,12 +28,12 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        await self.bot.sql.remove_guild(guild.id)
+        await self.bot.remove_guild(guild.id)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if not member.bot:
-            guild_data: models.Guild = self.bot.guild_data[member.guild.id]
+            guild_data: models.Guild = self.bot.get_guild_data(member.guild.id)
             await guild_data.add_member(member.id)
             join_channel = self.bot.get_channel(guild_data.welcome_channel)
             if join_channel:
@@ -43,7 +43,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         if not member.bot:
-            guild_data: models.Guild = self.bot.guild_data[member.guild.id]
+            guild_data: models.Guild = self.bot.get_guild_data(member.guild.id)
             await guild_data.remove_member(member.id)
             leaving_channel = self.bot.get_channel(guild_data.leaving_channel)
             if leaving_channel:
@@ -54,7 +54,7 @@ class Events(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if not before.bot:
             if before.nick != after.nick and after.nick is not None:
-                await self.bot.guild_data[after.guild.id].add_member_nickname(after.id, after.nick)
+                await self.bot.get_guild_data(after.guild.id).add_member_nickname(after.id, after.nick)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

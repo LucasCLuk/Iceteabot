@@ -27,7 +27,7 @@ class Reminder(Model):
 
     @property
     def jump_url(self):
-        guild_id = "@me" if self.guild is None else self.guild
+        guild_id = self.guild or "@me"
         return f"https://discordapp.com/channels/{guild_id}/{self.channel}/{self.id}"
 
     async def _task_func(self):

@@ -9,7 +9,7 @@ from database.models import Guild
 
 class Activity(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: "Iceteabot" = bot
         self.passive = self.bot.loop.create_task(self.passive_task())
 
     async def cog_check(self, ctx):
@@ -148,3 +148,7 @@ def setup(bot):
     if bot.debug:
         return
     bot.add_cog(Activity(bot))
+
+
+if __name__ == '__main__':
+    from utils.iceteabot import Iceteabot

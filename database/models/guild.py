@@ -16,6 +16,7 @@ from database.models.prefix import Prefix
 from database.models.reminder import Reminder
 from database.models.tag import Tag
 from utils.errors import ActivityAlreadyExists
+from utils.iceteacontext import IceTeaContext
 
 
 @dataclasses.dataclass()
@@ -253,10 +254,13 @@ class Guild(Model):
                                            "FROM tags where guild = $1)) LIMIT 1",
                                            self.id)
 
-    async def call_command(self, ctx):
+    async def call_command(self, ctx: "IceTeaContext"):
         command_call = CommandCall(self.client, author=ctx.author.id, called=ctx.message.created_at,
                                    command=ctx.command.qualified_name, guild=self.id)
         await command_call.save()
+        prefix = ctx.prefix_data
+        if prefix:
+            await prefix.use()
 
     async def add_activity(self, name, role):
         new_activity = self.activities.get(name.lower())
