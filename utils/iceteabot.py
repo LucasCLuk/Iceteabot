@@ -252,7 +252,7 @@ class Iceteabot(commands.Bot):
         if message.guild is None:
             return commands.when_mentioned_or(*iceteabot.config['default_prefix'])(iceteabot, message)
         else:
-            guild_data: models.Guild = iceteabot.guild_data.get(message.guild.id)
+            guild_data: models.Guild = iceteabot.get_guild_data(message.guild.id)
             if guild_data:
                 if guild_data.prefixes:
                     return commands.when_mentioned_or(*guild_data.prefixes.keys())(iceteabot, message)
