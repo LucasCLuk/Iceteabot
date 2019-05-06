@@ -58,6 +58,32 @@ class Members(commands.Cog):
                                 value=f"{target.activity.name}\n{target.activity.details}\n{target.activity.state}")
         await ctx.send(embed=embed)
 
+    @commands.group(invoke_without_command=True, name="set")
+    async def _set_profiles(self, ctx: "IceTeaContext"):
+        """Stores user information"""
+        pass
+
+    @_set_profiles.command(name="osu")
+    async def _osu(self, ctx: "IceTeaContext", *, username: str):
+        author_data = await ctx.get_author_data()
+        author_data.osu = username
+        await author_data.save()
+        await ctx.send_success()
+
+    @_set_profiles.command(name="league")
+    async def _league(self, ctx: "IceTeaContext", *, username: str):
+        author_data = await ctx.get_author_data()
+        author_data.league = username
+        await author_data.save()
+        await ctx.send_success()
+
+    @_set_profiles.command(name="location")
+    async def _location(self, ctx: "IceTeaContext", *, location: str):
+        author_data = await ctx.get_author_data()
+        author_data.location = location
+        await author_data.save()
+        await ctx.send_success()
+
 
 def setup(bot):
     bot.add_cog(Members(bot))

@@ -30,6 +30,9 @@ class IceTeaContext(Context):
     def get_guild_data(self, guild: int = None) -> "models.Guild":
         return self.bot.get_guild_data(guild)
 
+    async def get_author_data(self):
+        return await self.get_user_data(self.author)
+
     async def get_user_data(self, user: typing.Union[discord.Member, discord.User]) -> typing.Union[
         "models.Member", "models.User"]:
         if hasattr(user, "guild"):
@@ -46,6 +49,9 @@ class IceTeaContext(Context):
                             escape_markdown: bool = False) -> str:
         return await commands.clean_content(fix_channel_mentions=fix_channel_mentions, use_nicknames=use_nicknames,
                                             escape_markdown=escape_markdown).convert(self, argument)
+
+    async def send_success(self):
+        await self.send("\U00002705")
 
 
 if __name__ == '__main__':

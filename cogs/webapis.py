@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 from lxml import html
 
+from utils.iceteacontext import IceTeaContext
+
 
 class WebAPIs:
     def __init__(self, bot):
@@ -62,7 +64,8 @@ class WebAPIs:
     async def urban_dict(self, word: str):
 
         async with self.bot.aioconnection.get(
-                "https://mashape-community-urban-dictionary.p.mashape.com/define?term={0}".format(word),
+                "https://mashape-community-urban-dictionary.p.mashape.com/define",
+                params={"term": word},
                 headers={"X-Mashape-Key": self.mash_shape_key,
                          "Accept": "text/plain",
                          "X-Mashape-Host": "mashape-community-urban-dictionary.p.mashape.com"}) as response:
@@ -154,7 +157,7 @@ class Websites(commands.Cog):
 
     @commands.command()
     @commands.cooldown(5, 2, commands.BucketType.user)
-    async def urban(self, ctx, *, word):
+    async def urban(self, ctx: "IceTeaContext", *, word):
         """Defines a word using the urban dictionary, provides examples"""
         results = await self.web_apis.urban_dict(word)
         if results is None:
@@ -173,7 +176,7 @@ class Websites(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 5)
-    async def xkcd(self, ctx, comic_number: int = None):
+    async def xkcd(self, ctx: "IceTeaContext", comic_number: int = None):
         """Retrieves a specific XKCD comic, if left blank gets the newest one"""
         if comic_number is not None:
             comic = await self.web_apis.xkcd_grab_specific(comic_number)
@@ -183,7 +186,7 @@ class Websites(commands.Cog):
 
     @commands.command(enabled=False)
     @commands.cooldown(5, 15, type=commands.BucketType.user)
-    async def define(self, ctx, *, word):
+    async def define(self, ctx: "IceTeaContext", *, word):
         """Defines a word from the Oxford dictionary"""
         response = await self.web_apis.define_word(word)
         if response is None or len(response) == 0:
@@ -192,16 +195,16 @@ class Websites(commands.Cog):
             embed = discord.Embed(title="Iceteabot Definer", description=f"Definition for {word}")
             counter = 1
             for entry in response[:4]:
-                embed.add_field(name=f"Definiton {counter}", value=entry, inline=False)
+                embed.add_field(name=f"Definition {counter}", value=entry, inline=False)
                 counter += 1
             await ctx.send(embed=embed)
 
     @commands.command()
     @commands.cooldown(1, 20, commands.BucketType.user)
-    async def weather(self, ctx, *, location=None):
+    async def weather(self, ctx: "IceTeaContext", *, location=None):
         """Displays current weather information based on a location given"""
-        author_data = await ctx.author_data
         if location is None:
+            author_data = await ctx.get_author_data()
             location = author_data.location
         if location is None:
             raise commands.BadArgument(message=ctx.message.content)
@@ -226,17 +229,16 @@ class Websites(commands.Cog):
             return await ctx.send(embed=embed)
 
     @weather.error
-    async def weather_error(self, ctx, error):
+    async def weather_error(self, ctx: "IceTeaContext", error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("You need to specify a location")
 
     @commands.command()
     @commands.cooldown(5, 20, commands.BucketType.user)
-    async def forecast(self, ctx, *, location=None):
+    async def forecast(self, ctx: "IceTeaContext", *, location=None):
         """Display's a 5 day forecast"""
-        author_data = await ctx.author_data
-
         if location is None:
+            author_data = await ctx.get_author_data()
             location = author_data.location
         if location is None:
             raise commands.BadArgument(message=location)
@@ -265,7 +267,7 @@ class Websites(commands.Cog):
             await ctx.send(embed=embed)
 
     @forecast.error
-    async def forecast_error(self, ctx, error):
+    async def forecast_error(self, ctx: "IceTeaContext", error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("You need to specify a location")
 
