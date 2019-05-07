@@ -60,6 +60,8 @@ class Activity(commands.Cog):
             while not self.bot.is_closed() and self.bot.data_base_built:
                 await self._passive_task()
                 await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            return
         except Exception as e:
             try:
                 from sentry_sdk import capture_exception
