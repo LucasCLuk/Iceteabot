@@ -26,7 +26,7 @@ class Members(commands.Cog):
     async def userinfo(self, ctx: "IceTeaContext", target: discord.Member = None):
         """Display's a users information summary"""
         target = target or ctx.author
-        target_data = await ctx.get_user_data(target)
+        target_data = ctx.author_data if target == ctx.author else await ctx.get_user_data(target)
         if target_data:
             nicknames = await target_data.get_nicknames()
         else:
@@ -65,21 +65,21 @@ class Members(commands.Cog):
 
     @_set_profiles.command(name="osu")
     async def _osu(self, ctx: "IceTeaContext", *, username: str):
-        author_data = await ctx.get_author_data()
+        author_data = ctx.author_data
         author_data.osu = username
         await author_data.save()
         await ctx.send_success()
 
     @_set_profiles.command(name="league")
     async def _league(self, ctx: "IceTeaContext", *, username: str):
-        author_data = await ctx.get_author_data()
+        author_data = ctx.author_data
         author_data.league = username
         await author_data.save()
         await ctx.send_success()
 
     @_set_profiles.command(name="location")
     async def _location(self, ctx: "IceTeaContext", *, location: str):
-        author_data = await ctx.get_author_data()
+        author_data = ctx.author_data
         author_data.location = location
         await author_data.save()
         await ctx.send_success()

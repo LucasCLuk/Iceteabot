@@ -1,5 +1,4 @@
 import datetime
-from collections import Counter
 
 import discord
 import psutil
@@ -13,7 +12,7 @@ class Stats(commands.Cog):
     """Bot usage statistics."""
 
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: "Iceteabot" = bot
         self.process = psutil.Process()
         self.medals = ["\U0001f947", "\U0001F948", "\U0001F949", "\U0001f3c5", "\U0001f3c5"]
 
@@ -37,9 +36,9 @@ class Stats(commands.Cog):
             embed.add_field(name=event.lower().replace("_", " "), value=f"{value:,} **({percent}%)**")
         await ctx.send(embed=embed)
 
-    def get_bot_uptime(self, *, brief=False):
+    def get_bot_uptime(self, time, *, brief=False):
         now = datetime.datetime.utcnow()
-        delta = now - self.bot.uptime
+        delta = now - time
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
@@ -59,7 +58,8 @@ class Stats(commands.Cog):
     @commands.command()
     async def uptime(self, ctx):
         """Tells you how long the bot has been up for."""
-        await ctx.send(f'Uptime: **{self.get_bot_uptime()}**')
+        await ctx.send(f'Uptime: **{self.get_bot_uptime(self.bot.uptime)}**\nThe Last time I was reconnected was: '
+                       f'**{self.get_bot_uptime(self.bot.last_reconnect)}** ')
 
     @commands.command(name="ram")
     async def ramusage(self, ctx):
@@ -154,6 +154,10 @@ class Stats(commands.Cog):
         await ctx.send(embed=embed)
 
 
-def setup(bot):
-    bot.socket_stats = Counter()
+def setup(bot: "Iceteabot"):
+    bot.socket_stats.clear()
     bot.add_cog(Stats(bot))
+
+
+if __name__ == '__main__':
+    from utils.iceteabot import Iceteabot

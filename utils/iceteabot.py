@@ -5,6 +5,7 @@ import logging
 import os
 import traceback
 import typing
+from collections import Counter
 
 import asyncpg
 import discord
@@ -49,6 +50,8 @@ class Iceteabot(commands.Bot):
         self.add_command(self.ping_command)
         self._before_invoke = self._create_user_data
         self.loop.create_task(self._initialize())
+        self.last_reconnect: typing.Optional[datetime.datetime] = None
+        self.socket_stats: typing.Counter[str, int] = Counter()
 
     # noinspection PyUnresolvedReferences
     def run(self, *args, **kwargs):
@@ -81,6 +84,10 @@ class Iceteabot(commands.Bot):
         await super(Iceteabot, self).close()
         if not self.debug:
             exit(1)  # This is so that the system manager will properly restart it.
+
+    async def on_ready(self):
+        await self.change_presence(activity=discord.Game(name="waiting for orders"))
+        self.last_reconnect = datetime.datetime.utcnow()
 
     async def on_command_error(self, ctx: IceTeaContext, error: Exception):
         """Commands error handling method"""
@@ -248,7 +255,7 @@ class Iceteabot(commands.Bot):
         return ctx.channel.id not in ctx.guild_data.blocked_channels
 
     @staticmethod
-    async def get_guild_prefix(iceteabot, message):
+    async def get_guild_prefix(iceteabot, message: discord.Message):
         if message.guild is None:
             return commands.when_mentioned_or(*iceteabot.config['default_prefix'])(iceteabot, message)
         else:
@@ -273,7 +280,7 @@ class Iceteabot(commands.Bot):
             if response.status == 200:
                 return True
 
-    def get_guild_data(self, gid: int):
+    def get_guild_data(self, gid: int) -> models.Guild:
         return self._guild_data.get(gid)
 
     async def add_guild(self, guild: discord.Guild) -> models.Guild:

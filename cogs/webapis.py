@@ -204,7 +204,7 @@ class Websites(commands.Cog):
     async def weather(self, ctx: "IceTeaContext", *, location=None):
         """Displays current weather information based on a location given"""
         if location is None:
-            author_data = await ctx.get_author_data()
+            author_data = ctx.author_data
             location = author_data.location
         if location is None:
             raise commands.BadArgument(message=ctx.message.content)
@@ -238,7 +238,7 @@ class Websites(commands.Cog):
     async def forecast(self, ctx: "IceTeaContext", *, location=None):
         """Display's a 5 day forecast"""
         if location is None:
-            author_data = await ctx.get_author_data()
+            author_data = ctx.author_data
             location = author_data.location
         if location is None:
             raise commands.BadArgument(message=location)
