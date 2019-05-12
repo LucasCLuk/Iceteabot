@@ -1,8 +1,7 @@
-import asyncio
 import typing
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from database import models
 from utils import time
@@ -16,12 +15,13 @@ class Reminder(commands.Cog):
     def __init__(self, bot):
         self.bot: "Iceteabot" = bot
         self.reminder_cache: typing.Dict[int, models.Reminder] = {}
-        self.bot.loop.create_task(self._load_todays_reminders())
-        self.task = self.bot.loop.create_task(self.reminder_task())
+        self.reminder_task.before_loop(self.bot.wait_until_ready)
+        self.reminder_task.start()
 
     def cog_unload(self):
         for reminder in self.reminder_cache.values():
             reminder.cancel()
+        self.reminder_task.cancel()
 
     @commands.Cog.listener()
     async def on_reminder_complete(self, timer: models.Reminder):
@@ -45,8 +45,8 @@ class Reminder(commands.Cog):
             reminder.cancel()
             await reminder.delete()
 
-    async def _load_todays_reminders(self):
-        await self.bot.wait_until_ready()
+    @tasks.loop(hours=24)
+    async def reminder_task(self):
         await self.bot.sql.delete_old_reminders()
         reminders = await self.bot.sql.get_todays_reminders()
         for reminder in reminders:
@@ -57,12 +57,6 @@ class Reminder(commands.Cog):
                     await reminder.start()
             else:
                 await reminder.delete()
-
-    async def reminder_task(self):
-        await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            await self._load_todays_reminders()
-            await asyncio.sleep(10800)
 
     async def create_reminder(self, ctx, when, event):
         """Creates a timer.

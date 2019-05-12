@@ -1,22 +1,23 @@
-import asyncio
 import traceback
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from database.models import Guild
 
 
+# noinspection PyCallingNonCallable
 class Activity(commands.Cog):
     def __init__(self, bot):
         self.bot: "Iceteabot" = bot
-        self.passive = self.bot.loop.create_task(self.passive_task())
+        self._passive_task.before_loop(self.bot.wait_until_ready)
+        self._passive_task.start()
 
     async def cog_check(self, ctx):
         return ctx.guild and ctx.guild_data.premium
 
     def cog_unload(self):
-        self.passive.cancel()
+        self._passive_task.cancel()
 
     @commands.Cog.listener()
     async def on_member_activity_update(self, member: discord.Member, role: discord.Role, add: bool):
@@ -30,10 +31,7 @@ class Activity(commands.Cog):
                 await member.remove_roles(role)
                 self.bot.logger.info(f"Removed {role} from {member}")
 
-    async def _on_passive_error(self):
-        self.passive.cancel()
-        self.passive = self.bot.loop.create_task(self.passive_task())
-
+    @tasks.loop(seconds=10)
     async def _passive_task(self):
         for guild in self.bot.guilds:
             guild_data = self.bot.get_guild_data(guild.id)
@@ -53,21 +51,6 @@ class Activity(commands.Cog):
                         for role in member.roles:
                             if role in all_roles:
                                 self.bot.dispatch("member_activity_update", member, role, False)
-
-    async def passive_task(self):
-        try:
-            await self.bot.wait_until_ready()
-            while not self.bot.is_closed() and self.bot.data_base_built:
-                await self._passive_task()
-                await asyncio.sleep(10)
-        except asyncio.CancelledError:
-            return
-        except Exception as e:
-            try:
-                from sentry_sdk import capture_exception
-                capture_exception(e)
-            except ImportError:
-                pass
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
