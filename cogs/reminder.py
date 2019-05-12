@@ -15,7 +15,6 @@ class Reminder(commands.Cog):
     def __init__(self, bot):
         self.bot: "Iceteabot" = bot
         self.reminder_cache: typing.Dict[int, models.Reminder] = {}
-        self.reminder_task.before_loop(self.bot.wait_until_ready)
         self.reminder_task.start()
 
     def cog_unload(self):
@@ -47,6 +46,7 @@ class Reminder(commands.Cog):
 
     @tasks.loop(hours=24)
     async def reminder_task(self):
+        await self.bot.wait_until_ready()
         await self.bot.sql.delete_old_reminders()
         reminders = await self.bot.sql.get_todays_reminders()
         for reminder in reminders:

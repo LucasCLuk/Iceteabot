@@ -10,7 +10,6 @@ from database.models import Guild
 class Activity(commands.Cog):
     def __init__(self, bot):
         self.bot: "Iceteabot" = bot
-        self._passive_task.before_loop(self.bot.wait_until_ready)
         self._passive_task.start()
 
     async def cog_check(self, ctx):
@@ -33,6 +32,7 @@ class Activity(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def _passive_task(self):
+        await self.bot.wait_until_ready()
         for guild in self.bot.guilds:
             guild_data = self.bot.get_guild_data(guild.id)
             if guild_data.premium:
