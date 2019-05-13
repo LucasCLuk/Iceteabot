@@ -123,9 +123,7 @@ class Activity(commands.Cog):
     @activity.command(name="refresh")
     @commands.check(lambda ctx: ctx.author == ctx.guild.owner or ctx.author.id == ctx.bot.owner_id)
     async def refresh_activities(self, ctx):
-        await self._passive_task()
-        self.passive.cancel()
-        self.passive = self.bot.loop.create_task(self.passive_task())
+        self._passive_task.restart()
         await ctx.send("Refreshed")
 
 

@@ -51,7 +51,7 @@ class IceTeaContext(Context):
                                             escape_markdown=escape_markdown).convert(self, argument)
 
     async def send_success(self):
-        await self.send("\U00002705")
+        await self.send("\U00002705", delete_after=10)
 
 
 if __name__ == '__main__':

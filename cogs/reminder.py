@@ -138,6 +138,12 @@ class Reminder(commands.Cog):
     async def active_reminders(self, ctx: "IceTeaContext"):
         await ctx.send(f"There are currently **{len(self.reminder_cache)}** active reminders")
 
+    @reminder.command(name="refresh")
+    @commands.is_owner()
+    async def refresh_task(self, ctx: "IceTeaContext"):
+        self.reminder_task.restart()
+        await ctx.send_success()
+
 
 def setup(bot):
     bot.add_cog(Reminder(bot))
