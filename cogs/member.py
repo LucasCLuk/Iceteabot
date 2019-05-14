@@ -13,16 +13,16 @@ class Members(commands.Cog):
     async def cog_check(self, ctx):
         return ctx.guild
 
-    @commands.command(aliases=["avatar"])
+    @commands.command(aliases=["avatar", "pc", "av"])
     @commands.cooldown(1, 30, type=BucketType.user)
     async def avatarurl(self, ctx: "IceTeaContext", target: discord.Member = None):
         """Displays the authors or target's avatar url"""
-        if target is None:
-            await ctx.send(f"{ctx.author.avatar_url}")
-        else:
-            await ctx.send(f"{target.avatar_url}")
+        target = target or ctx.author
+        embed = discord.Embed(description=f"{target} Profile Picture")
+        embed.set_image(url=str(target.avatar_url))
+        await ctx.send(embed=embed)
 
-    @commands.command(aliases=['uinfo'])
+    @commands.command(aliases=['uinfo', 'ui'])
     async def userinfo(self, ctx: "IceTeaContext", target: discord.Member = None):
         """Display's a users information summary"""
         target = target or ctx.author
