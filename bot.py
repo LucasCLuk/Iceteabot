@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import os
 
 import ujson
@@ -19,4 +20,10 @@ else:
 bot = Iceteabot(config=config)
 
 if __name__ == '__main__':
-    bot.run()
+    async def setup():
+        bot.setup_logging()
+        await bot.setup_database()
+        await bot.start()
+
+
+    asyncio.get_event_loop().run_until_complete(setup())

@@ -66,6 +66,18 @@ class Iceteabot(commands.Bot):
             pass
         return super(Iceteabot, self).run(token)
 
+    async def start(self, *args, **kwargs):
+        if args:
+            token = args[0]
+        else:
+            token = self.config['api_keys']['discord']
+        try:
+            import uvloop
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        except ImportError:
+            pass
+        await super(Iceteabot, self).start(token)
+
     def reload_extension(self, name):
         return super(Iceteabot, self).reload_extension(f"{self.cog_path}.{name}")
 
@@ -182,13 +194,7 @@ class Iceteabot(commands.Bot):
         except ImportError:
             return
 
-    async def setup_database(self):
-        # noinspection PyBroadException
-        try:
-            self.sql = SqlClient(await asyncpg.create_pool(**self.config['database']), self)
-            await self.sql.setup()
-        except:
-            exit(1)
+    async def populate_database(self):
         await self.sql.add_users(self.users)
         guilds = await self.sql.get_all_guilds()
         self._guild_data.update({guild.id: guild for guild in guilds})
@@ -198,14 +204,22 @@ class Iceteabot(commands.Bot):
         self._database_loaded.set()
         self.data_base_built = True
 
+    async def setup_database(self):
+        # noinspection PyBroadException
+        try:
+            self.sql = SqlClient(await asyncpg.create_pool(**self.config['database']), self)
+            await self.sql.setup()
+        except Exception as e:
+            print(traceback.format_tb(e))
+            exit(1)
+
     async def _initialize(self):
         try:
-            self.setup_logging()
             await self._ready.wait()
             application_info: discord.AppInfo = await self.application_info()
             self.client_id = application_info.id
             self.owner = application_info.owner
-            await self.setup_database()
+            await self.populate_database()
             cogs = self.config.get("extensions")
             if cogs == "*":
                 startup_extensions = [f"{os.path.basename(ext)[:-3]}"

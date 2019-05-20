@@ -33,8 +33,8 @@ class IceTeaContext(Context):
     async def get_author_data(self):
         return await self.get_user_data(self.author)
 
-    async def get_user_data(self, user: typing.Union[discord.Member, discord.User]) -> typing.Union[
-        "models.Member", "models.User"]:
+    async def get_user_data(self, user: typing.Union[discord.Member, discord.User]) -> \
+            typing.Union["models.Member", "models.User"]:
         if hasattr(user, "guild"):
             guild = self.get_guild_data(user.guild.id)
             if guild:
