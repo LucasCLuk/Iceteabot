@@ -50,8 +50,8 @@ class IceTeaContext(Context):
         return await commands.clean_content(fix_channel_mentions=fix_channel_mentions, use_nicknames=use_nicknames,
                                             escape_markdown=escape_markdown).convert(self, argument)
 
-    async def send_success(self):
-        await self.send("\U00002705", delete_after=10)
+    async def send_success(self, content: str = ''):
+        await self.send(f"\U00002705\n{content}", delete_after=10)
 
 
 if __name__ == '__main__':

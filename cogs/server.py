@@ -91,7 +91,11 @@ class Server(commands.Cog):
 
         await ctx.send(embed=e)
 
-    @commands.group(name="prefix", invoke_without_command=True)
+    @commands.group()
+    async def settings(self, ctx: "IceTeaContext"):
+        pass
+
+    @settings.group(name="prefix", invoke_without_command=True)
     async def _prefix(self, ctx):
         """Prefix managing command, use ``help prefix`` for more information
         Displays a list of this server's prefixes if left blank"""
@@ -169,7 +173,7 @@ class Server(commands.Cog):
 
         await ctx.send(embed=e)
 
-    @commands.command(name="joinch")
+    @settings.command(name="joinch")
     @commands.check(is_guild_admin)
     @commands.bot_has_permissions(send_messages=True, read_messages=True)
     async def set_join_channel(self, ctx: "IceTeaContext", channel: discord.TextChannel = None):
@@ -181,7 +185,7 @@ class Server(commands.Cog):
                 await ctx.guild_data.save()
                 await ctx.send(f"Successfully set join channel, I will now welcome members in the channel {channel}")
 
-    @commands.command(name="leavech")
+    @settings.command(name="leavech")
     @commands.check(is_guild_admin)
     @commands.bot_has_permissions(send_messages=True, read_messages=True)
     async def set_leave_channel(self, ctx: "IceTeaContext", channel: discord.TextChannel = None):
@@ -195,7 +199,7 @@ class Server(commands.Cog):
                     f"Successfully set leaving channel, I will now notify when members "
                     f"leave members in the channel {channel}")
 
-    @commands.command(name="gtrack")
+    @settings.command(name="track")
     @commands.check(is_guild_admin)
     async def set_tracking(self, ctx):
         """This tells the bot to track user nickname's. The bot will keep a record of all nicknames a user has had."""
@@ -203,7 +207,7 @@ class Server(commands.Cog):
         await ctx.send(f"Guild tracking has now been set to **{ctx.guild_data.tracking}**")
         await ctx.guild_data.update()
 
-    @commands.command(name="joinmsg")
+    @settings.command(name="joinmsg")
     @commands.check(is_guild_admin)
     async def set_join_message(self, ctx: "IceTeaContext", *, message):
         """Sets the server's join message, must be enabled first by setting a channel see ``help joinch``"""
@@ -212,7 +216,7 @@ class Server(commands.Cog):
         await ctx.guild_data.save()
         await ctx.send("Set Join Message")
 
-    @commands.command(name="leavemsg")
+    @settings.command(name="leavemsg")
     @commands.check(is_guild_admin)
     async def set_leave_message(self, ctx: "IceTeaContext", *, message):
         """Sets the server's leave message, must be enabled first see ``help leavech``"""
@@ -221,7 +225,7 @@ class Server(commands.Cog):
         await ctx.guild_data.save()
         await ctx.send("Set Leave Message")
 
-    @commands.command(name="disablech")
+    @settings.command(name="disablech")
     @commands.check(is_guild_admin)
     async def block_command(self, ctx: "IceTeaContext", target: discord.TextChannel = None, *, reason=None):
         """Prevents the bot from responding to any commands in this channel"""
@@ -231,7 +235,7 @@ class Server(commands.Cog):
             if response:
                 await ctx.send("I will no longer respond to commands in this channel")
 
-    @commands.command(name="enablech")
+    @settings.command(name="enablech")
     @commands.check(is_guild_admin)
     async def unblock_command(self, ctx: "IceTeaContext", target: discord.TextChannel = None):
         """Unblocks a channel, meaning the bot can respond to commands"""
@@ -241,7 +245,7 @@ class Server(commands.Cog):
             if response:
                 await ctx.send("I will now respond to commands in this channel")
 
-    @commands.command(name="newuserrole")
+    @settings.command(name="newuserrole")
     @commands.check(is_guild_admin)
     @commands.bot_has_permissions(manage_roles=True)
     async def set_new_role(self, ctx: "IceTeaContext", target_role: discord.Role = None, when: int = 0):
@@ -257,6 +261,15 @@ class Server(commands.Cog):
             ctx.guild_data.delay = when
             await ctx.guild_data.save()
             await ctx.send(f"I will now give {target_role} to new members")
+
+    @settings.command()
+    @commands.is_owner()
+    async def premium(self, ctx: "IceTeaContext", gid: int):
+        guild = ctx.bot.get_guild(gid)
+        guild_data = ctx.bot.get_guild_data(gid)
+        guild_data.premium = not guild_data.premium
+        await guild_data.save()
+        await ctx.send_success(f"{guild}'s premium status is now: {'Enabled' if guild_data.premium else 'Disabled'}")
 
 
 def setup(bot):

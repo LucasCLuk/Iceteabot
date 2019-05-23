@@ -117,19 +117,19 @@ class VoiceState(discord.PCMVolumeTransformer):
     def __init__(self, ctx: "IceTeaContext"):
         self.choosing = False
         self.results = []
-        self.choosing_message = None
-        self.current = None
-        self.voice = None
+        self.choosing_message: typing.Optional[discord.Message] = None
+        self.current: typing.Optional[Song] = None
+        self.voice: typing.Optional[discord.VoiceClient] = None
         self.bot = ctx.bot
         self.repeating = False
         self.play_next_song = asyncio.Event()
         self.songs = asyncio.Queue()
         self.audio_player: typing.Optional[asyncio.Task] = None
-        self.ctx = ctx
+        self.ctx: "IceTeaContext" = ctx
         self.playlist_que = asyncio.Queue()
-        self.playlist_processor_task = None
+        self.playlist_processor_task: typing.Optional[asyncio.Task] = None
         self.finished_playing = False
-        self.lock = None
+        self.lock = asyncio.Event()
 
     def is_playing(self):
         if self.voice is None or self.current is None:
@@ -231,9 +231,9 @@ class Music(commands.Cog):
         except Exception:
             self.stations = None
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: "IceTeaContext"):
         guild_data = ctx.guild_data
-        return guild_data.premium
+        return guild_data.premium or await ctx.bot.is_owner(ctx.author)
 
     def cog_unload(self):
         for item in self.voice_states.values():
@@ -241,17 +241,13 @@ class Music(commands.Cog):
             item.audio_player.cancel()
         del self.voice_states
 
-    async def repeating_check(self, ctx):
-        state = self.get_voice_state(ctx)
-        return state.repeating
-
     def get_voice_state(self, ctx):
         state = self.voice_states.get(ctx.guild.id)
         if state is None:
             state = VoiceState(ctx)
             self.voice_states[ctx.guild.id] = state
 
-        return state
+        return self.voice_states.get(ctx.guild.id)
 
     @commands.Cog.listener()
     async def on_queue_finish(self, state: typing.Union[VoiceState, RadioStream]):

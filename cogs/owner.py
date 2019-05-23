@@ -281,6 +281,8 @@ class Owner(commands.Cog):
         response = await ctx.bot.update_discord_bots()
         if response == 200:
             await ctx.message.add_reaction("\u2705")
+        else:
+            return await ctx.send(f'Unable to Update: Returned {response.status}', delete_after=20)
 
     @commands.command()
     async def newguilds(self, ctx: IceTeaContext, *, count=5):
