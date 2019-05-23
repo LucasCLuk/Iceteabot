@@ -62,15 +62,14 @@ class Events(commands.Cog):
             await self.bot.sql.update_member_last_spoke(message.author.id, message.guild.id, message.created_at)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.emoji.is_unicode_emoji() and self.bot.owner_id is not None:
             if all([payload.channel_id == 384410040880201730, payload.user_id == self.bot.owner_id,
                     str(payload.emoji) == "\U0000274c"]):
-                channel = self.bot.get_channel(payload.channel_id)
-                if channel is not None:
-                    message = await channel.get_message(payload.message_id)
-                    if payload.message_id is not None:
-                        await message.delete()
+                try:
+                    await self.bot.http.delete_message(payload.channel_id, payload.message_id)
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    pass
 
 
 def setup(bot):
