@@ -53,6 +53,7 @@ class Owner(commands.Cog):
         """Evaluates a code"""
 
         env = {
+            'self': self,
             'bot': self.bot,
             'ctx': ctx,
             'channel': ctx.channel,
