@@ -5,7 +5,7 @@ from collections import Counter
 from datetime import datetime
 
 from discord import Embed, RawReactionActionEvent, RawMessageDeleteEvent
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from utils.permissions import guild_administrator
 
@@ -26,18 +26,15 @@ class PollObj:
         self.ctx = kwargs.get('ctx')
         self.id = kwargs.get('id')
         self.created = datetime.utcnow()
-        self.message_task: asyncio.Task = self.ctx.bot.loop.create_task(self.message_editor_task())
+        self._message_editor_task.start()
 
-    async def message_editor_task(self):
-        while not self.is_closed:
-            if self._new_votes:
-                await self.ctx.bot.http.edit_message(self.message.id, self.ctx.channel.id,
-                                                     embed=self.embed_builder())
-                self._new_votes = False
-            await asyncio.sleep(5)
-        await self.ctx.bot.http.edit_message(self.message.id, self.ctx.channel.id,
-                                             embed=self.embed_builder("Closed"))
-        await self.message.clear_reactions()
+    # noinspection PyCallingNonCallable
+    @tasks.loop(seconds=5)
+    async def _message_editor_task(self):
+        if self._new_votes:
+            await self.ctx.bot.http.edit_message(self.message.id, self.ctx.channel.id,
+                                                 embed=self.embed_builder())
+            self._new_votes = False
 
     def embed_builder(self, status: str = "Open") -> dict:
         embed = Embed(title=self.title)
@@ -78,6 +75,15 @@ class PollObj:
         elif 0 <= percentage <= 10:
             return f"{self.empty_char * 10}"
 
+    async def close(self):
+        await self.ctx.bot.http.edit_message(self.message.id, self.ctx.channel.id,
+                                             embed=self.embed_builder("Closed"))
+        await self.message.clear_reactions()
+        self._message_editor_task.cancel()
+
+    def cancel(self):
+        self._message_editor_task.cancel()
+
 
 class Poll(commands.Cog):
     def __init__(self, bot):
@@ -92,7 +98,7 @@ class Poll(commands.Cog):
 
     def cog_unload(self):
         for poll in self.polls.values():
-            poll.message_task.cancel()
+            poll.cancel()
 
     def reaction_filter(self, payload: RawReactionActionEvent) -> bool:
         if payload.emoji.name not in self.valid_reactions:
@@ -176,7 +182,7 @@ class Poll(commands.Cog):
     async def dpoll(self, ctx, poll_id):
         """Closes a currently open poll, you can get the ID from the bottom of the poll message embed,
         only the person who opened the poll can close it"""
-        polobj = None
+        polobj: typing.Optional[PollObj] = None
         message_id = None
         for message, poll_data in self.polls.items():
             if poll_data.id == poll_id:
@@ -187,13 +193,7 @@ class Poll(commands.Cog):
             if polobj.author != ctx.author:
                 return
             if all([polobj is not None, message_id is not None]):
-                polobj.is_closed = True
-                self.polls[message_id].message_task.cancel()
-                del self.polls[message_id]
-                try:
-                    await self.bot.http.clear_reactions(message_id, ctx.channel.id)
-                except:
-                    pass
+                await polobj.close()
 
     @commands.command()
     @commands.check(guild_administrator)
