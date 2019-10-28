@@ -1,9 +1,9 @@
 import argparse
 import asyncio
+import json
 import os
 
 import asyncpg
-import ujson
 
 from database.sqlclient import SqlClient
 
@@ -13,7 +13,7 @@ args = parser.parse_args()
 
 if os.path.exists(args.config):
     with open(args.config) as config_file:
-        config = ujson.load(config_file)
+        config = json.load(config_file)
 else:
     raise FileNotFoundError("Config file not found")
 

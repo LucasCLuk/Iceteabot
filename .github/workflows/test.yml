@@ -1,0 +1,41 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:11-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: iceteacity
+          POSTGRES_DB: iceteacity
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: run tests
+        env:
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: iceteacity
+          DATABASE_NAME: iceteacity
+          DATABASE_HOST: localhost
+          DATABASE_PORT: ${{ job.services.postgres.ports[5432] }}
+        run: |
+          python setup_db
+          python -m unittest tests
+

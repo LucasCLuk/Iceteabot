@@ -129,7 +129,7 @@ class Reminder(commands.Cog):
                 if reminder.task:
                     reminder.task.cancel()
                 await reminder.delete()
-                await ctx.send("Deleted", delete_after=10)
+                await ctx.send_success()
         else:
             await ctx.send("No Reminder found", delete_after=10)
 

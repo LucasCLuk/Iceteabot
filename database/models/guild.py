@@ -237,6 +237,7 @@ class Guild(Model):
                 await transaction.rollback()
         except Exception as e:
             capture_exception(e)
+            raise e
         finally:
             await self.client.pool.release(connection)
 
