@@ -6,7 +6,6 @@ import typing
 
 import discord
 import isodate
-import ujson
 import youtube_dl
 from bs4 import BeautifulSoup
 from discord.ext import commands
@@ -227,7 +226,12 @@ class Music(commands.Cog):
         self.voice_states: typing.Dict[int, VoiceState] = {}
         try:
             with open(os.path.join('data', 'stations.json')) as file:
-                self.stations = ujson.load(file)
+                try:
+                    import ujson
+                    self.stations = ujson.load(file)
+                except (ModuleNotFoundError, ImportError):
+                    import json
+                    self.stations = json.load(file)
         except Exception:
             self.stations = None
 

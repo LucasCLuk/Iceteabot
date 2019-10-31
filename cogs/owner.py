@@ -8,7 +8,6 @@ import traceback
 from contextlib import redirect_stdout
 
 import discord
-import ujson
 from discord.ext import commands
 
 from utils import time as utils_time
@@ -273,7 +272,13 @@ class Owner(commands.Cog):
     async def update_config(self, ctx: IceTeaContext):
         """Updates the bot's config file"""
         with open(os.path.join('data', 'config.json')) as file:
-            ctx.bot.config = ujson.load(file)
+            try:
+                import ujson
+                ctx.bot.config = ujson.load(file)
+            except (ModuleNotFoundError, ImportError):
+                import json
+                ctx.bot.config = json.load(file)
+                pass
             await ctx.message.add_reaction('\u2705')
 
     @commands.command(name="updatedbots")

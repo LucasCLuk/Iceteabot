@@ -3,6 +3,7 @@ import datetime
 import glob
 import logging
 import os
+import sys
 import traceback
 import typing
 from collections import Counter
@@ -10,7 +11,6 @@ from collections import Counter
 import asyncpg
 import discord
 import psutil
-import ujson
 from aiohttp import ClientSession
 from discord.ext import commands
 
@@ -37,7 +37,11 @@ class Iceteabot(commands.Bot):
         self.owner: typing.Optional[models.User] = None
         self.cog_path: str = self.config.get("cogs_path", "cogs")
         self.client_id: typing.Optional[str] = None
-        self.aioconnection: ClientSession = ClientSession(json_serialize=ujson.dumps, loop=self.loop)
+        try:
+            import ujson
+            self.aioconnection: ClientSession = ClientSession(json_serialize=ujson.dumps, loop=self.loop)
+        except (ModuleNotFoundError, ImportError):
+            self.aioconnection: ClientSession = ClientSession(loop=self.loop)
         self._database_loaded = asyncio.Event(loop=self.loop)
         self.sql: typing.Optional[SqlClient] = None
         self._guild_data: typing.Dict[int, models.Guild] = {}
@@ -235,6 +239,7 @@ class Iceteabot(commands.Bot):
                 except Exception as e:
                     exc = '{}: {} on cog: {}'.format(type(e).__name__, e, extension)
                     print(exc)
+                    traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
 
             print(f"Successfully logged in as {self.user}\n" +
                   f"Using version {discord.__version__} of discord.py\n" +
@@ -262,8 +267,7 @@ class Iceteabot(commands.Bot):
         """displays the bot's latency with discord"""
         await ctx.send(f"Current ping is: **{round(ctx.bot.latency, 2)} seconds**")
 
-    @staticmethod
-    async def guild_black_list(ctx):
+    async def guild_black_list(self, ctx):
         if ctx.guild is None:
             return True
         return ctx.channel.id not in ctx.guild_data.blocked_channels
