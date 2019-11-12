@@ -5,8 +5,11 @@ import os
 from utils.iceteabot import Iceteabot
 
 parser = argparse.ArgumentParser()
-parser.add_argument("name", type=str, help="The name of the bot", default="iceteabot")
-parser.add_argument("config", type=str, help="Path to config file for the bot", default="config.json")
+parser.add_argument("--name", type=str, help="The name of the bot", default="iceteabot", required=False)
+parser.add_argument("--config", type=str, help="Path to config file for the bot", default="data/config.json",
+                    required=False)
+parser.add_argument("--use-logging", type=bool, help="Path to log file for the bot", default=False,
+                    required=False)
 args = parser.parse_args()
 
 
@@ -21,10 +24,11 @@ async def main():
     else:
         raise FileNotFoundError("Config file not found")
     bot = Iceteabot(config=config)
-    bot.setup_logging()
+    if args.use_logging:
+        bot.setup_logging()
     await bot.setup_database()
     await bot.start()
 
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())

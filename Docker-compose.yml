@@ -1,0 +1,30 @@
+version: "3"
+
+
+
+
+services:
+  database:
+    hostname: "postgres"
+    container_name: "iceteabot-postgres"
+    image: "postgres:latest"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: iceteabot
+      POSTGRES_USER: iceteabot
+      POSTGRES_PASSWORD: Iceteabot
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  iceteabot:
+    hostname: "iceteabot"
+    container_name: "iceteabot-container"
+    build: .
+    depends_on:
+      - database
+
+
+
+volumes:
+  pgdata:

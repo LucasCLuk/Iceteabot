@@ -12,4 +12,3 @@ ujson
 asyncpg
 sentry-sdk
 aiocontextvars
-uvloop
