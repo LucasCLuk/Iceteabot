@@ -1,5 +1,8 @@
 name: Deploy
-on: [tag]
+on:
+  push:
+    tags:
+      - v1.*
 jobs:
 
   build:
