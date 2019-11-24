@@ -38,6 +38,7 @@ class Iceteabot(commands.Bot):
             status=discord.Status.idle,
             case_insensitive=True,
             *args, **self.config)
+        self.name: str = "Iceteabot"
         self.version = self.config.get("version", 1.0)
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
         self.uptime: datetime.datetime = datetime.datetime.utcnow()
@@ -227,6 +228,7 @@ class Iceteabot(commands.Bot):
             self.client_id = application_info.id
             self.owner = application_info.owner
             self.owner_id = application_info.owner.id
+            self.name = str(self.user)
             await self.populate_database()
             startup_extensions = [f"{os.path.basename(ext)[:-3]}"
                                   for ext in glob.glob("cogs/*.py")]
