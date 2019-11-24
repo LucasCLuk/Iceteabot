@@ -64,8 +64,7 @@ class Iceteabot(commands.Bot):
         self.last_reconnect: typing.Optional[datetime.datetime] = None
         self.socket_stats: typing.Counter[str, int] = Counter()
 
-    # noinspection PyUnresolvedReferences
-    def run(self, *args, **kwargs):
+    def _prepare(self, *args, **kwargs):
         if args:
             token = args[0]
         else:
@@ -75,18 +74,17 @@ class Iceteabot(commands.Bot):
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         except ImportError:
             pass
+        if self.sql is None:
+            raise BaseException("Sql Not Setup, make sure to run Iceteabot.setup_database")
+        return token
+
+    # noinspection PyUnresolvedReferences
+    def run(self, *args, **kwargs):
+        token = self._prepare(*args, **kwargs)
         return super(Iceteabot, self).run(token)
 
     async def start(self, *args, **kwargs):
-        if args:
-            token = args[0]
-        else:
-            token = self.config['discord_token']
-        try:
-            import uvloop
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        except ImportError:
-            pass
+        token = self._prepare(*args, **kwargs)
         await super(Iceteabot, self).start(token)
 
     def reload_extension(self, name):
@@ -181,12 +179,12 @@ class Iceteabot(commands.Bot):
     def setup_logging(self):
         self.logger = logging.getLogger("discord")
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename="data/iceteabot.log", encoding='utf-8', mode='w')
+        handler = logging.StreamHandler(stream=sys.stderr)
         handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
         self.logger.addHandler(handler)
         self.error_logger = logging.getLogger("errors")
         self.error_logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename="data/error.log", encoding='utf-8', mode='w')
+        handler = logging.StreamHandler(stream=sys.stderr)
         handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
         self.error_logger.addHandler(handler)
         self.setup_raven()

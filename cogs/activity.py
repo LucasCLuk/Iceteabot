@@ -128,8 +128,6 @@ class Activity(commands.Cog):
 
 
 def setup(bot):
-    if bot.debug:
-        return
     bot.add_cog(Activity(bot))
 
 
