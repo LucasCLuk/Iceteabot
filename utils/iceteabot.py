@@ -216,13 +216,7 @@ class Iceteabot(commands.Bot):
     async def setup_database(self):
         # noinspection PyBroadException
         try:
-            self.sql = SqlClient(await asyncpg.create_pool(
-                user=os.getenv('POSTGRES_USER'),
-                password=os.getenv('POSTGRES_PASSWORD'),
-                database=os.getenv('POSTGRES_DATABASE'),
-                port=os.getenv('POSTGRES_PORT', "5432"),
-                host=os.getenv('POSTGRES_HOST')
-            ), self)
+            self.sql = SqlClient(await asyncpg.create_pool(dsn=os.getenv('POSTGRES_URL')), self)
             await self.sql.setup()
         except Exception as e:
             print(traceback.format_tb(e))
