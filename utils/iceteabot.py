@@ -179,7 +179,7 @@ class Iceteabot(commands.Bot):
     def setup_logging(self):
         self.logger = logging.getLogger("discord")
         self.logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler(stream=sys.stderr)
+        handler = logging.StreamHandler(stream=sys.stdout)
         handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
         self.logger.addHandler(handler)
         self.error_logger = logging.getLogger("errors")
@@ -239,11 +239,11 @@ class Iceteabot(commands.Bot):
                     print(exc)
                     traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
 
-            print(f"Successfully logged in as {self.user}\n" +
-                  f"Using version {discord.__version__} of discord.py\n" +
-                  f"Using {psutil.Process().memory_full_info().uss / 1024 ** 2} of ram\n" +
-                  f"loaded {len(self.extensions)} cogs\n" +
-                  f"{'-' * 15}")
+            self.logger.info(f"Successfully logged in as {self.user}\n" +
+                             f"Using version {discord.__version__} of discord.py\n" +
+                             f"Using {psutil.Process().memory_full_info().uss / 1024 ** 2} of ram\n" +
+                             f"loaded {len(self.extensions)} cogs\n" +
+                             f"{'-' * 15}")
             await self.change_presence(activity=discord.Game(name="waiting for orders"))
         except Exception as e:
             try:

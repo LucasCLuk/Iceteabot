@@ -23,7 +23,9 @@ services:
     build: .
     depends_on:
       - database
-
+    environment:
+      DISCORD_TOKEN
+      POSTGRES_URL
 
 
 volumes:
