@@ -1,4 +1,4 @@
-FROM python:3.7-alpine
+FROM gorialis/discord.py:3.7.4-alpine-pypi-full
 
 COPY . /opt/iceteabot
 

@@ -22,20 +22,27 @@ from utils.iceteacontext import IceTeaContext
 
 class Iceteabot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        self.config: dict = kwargs.pop("config", {})
+        self.config: dict = {
+            "default_prefix": os.getenv('DEFAULT_PREFIX', '<>'),
+            "discord_token": os.getenv("DISCORD_TOKEN"),
+            "openweather_token": os.getenv('OPENWEATHER_TOKEN'),
+            "oxford_token": os.getenv('OXFORD_TOKEN'),
+            "youtube_token": os.getenv('YOUTUBE_TOKEN'),
+            "mashshape_token": os.getenv('MASHSHAPE_TOKEN'),
+            "sentry_token": os.getenv('SENTRY_TOKEN'),
+            "discordbots_token": os.getenv('DISCORDBOTS_TOKEN')
+        }
         super(Iceteabot, self).__init__(
             command_prefix=self.get_guild_prefix,
             help_command=IceHelpCommand(),
             status=discord.Status.idle,
             case_insensitive=True,
             *args, **self.config)
-        self.debug: bool = self.config.get("debug", True)
-        self.name: str = self.config.get("name", "iceteabot")
         self.version = self.config.get("version", 1.0)
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
         self.uptime: datetime.datetime = datetime.datetime.utcnow()
         self.owner: typing.Optional[models.User] = None
-        self.cog_path: str = self.config.get("cogs_path", "cogs")
+        self.cog_path: str = "cogs"
         self.client_id: typing.Optional[str] = None
         try:
             import ujson
@@ -62,7 +69,7 @@ class Iceteabot(commands.Bot):
         if args:
             token = args[0]
         else:
-            token = self.config['api_keys']['discord']
+            token = self.config['discord_token']
         try:
             import uvloop
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -74,7 +81,7 @@ class Iceteabot(commands.Bot):
         if args:
             token = args[0]
         else:
-            token = self.config['api_keys']['discord']
+            token = self.config['discord_token']
         try:
             import uvloop
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -98,8 +105,6 @@ class Iceteabot(commands.Bot):
         await self.aioconnection.close()
         await self.sql.pool.close()
         await super(Iceteabot, self).close()
-        if not self.debug:
-            exit(1)  # This is so that the system manager will properly restart it.
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Game(name="waiting for orders"))
@@ -194,7 +199,7 @@ class Iceteabot(commands.Bot):
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=logging.ERROR  # Send errors as events
             )
-            init(self.config['api_keys']['sentry'], integrations=[sentry_logging])
+            init(self.config['sentry_token'], integrations=[sentry_logging])
         except ImportError:
             return
 
@@ -211,7 +216,13 @@ class Iceteabot(commands.Bot):
     async def setup_database(self):
         # noinspection PyBroadException
         try:
-            self.sql = SqlClient(await asyncpg.create_pool(**self.config['database']), self)
+            self.sql = SqlClient(await asyncpg.create_pool(
+                user=os.getenv('POSTGRES_USER'),
+                password=os.getenv('POSTGRES_PASSWORD'),
+                database=os.getenv('POSTGRES_DATABASE'),
+                port=os.getenv('POSTGRES_PORT', "5432"),
+                host=os.getenv('POSTGRES_HOST')
+            ), self)
             await self.sql.setup()
         except Exception as e:
             print(traceback.format_tb(e))
@@ -223,15 +234,10 @@ class Iceteabot(commands.Bot):
             application_info: discord.AppInfo = await self.application_info()
             self.client_id = application_info.id
             self.owner = application_info.owner
+            self.owner_id = application_info.owner.id
             await self.populate_database()
-            cogs = self.config.get("extensions")
-            if cogs == "*":
-                startup_extensions = [f"{os.path.basename(ext)[:-3]}"
-                                      for ext in glob.glob("cogs/*.py")]
-            elif isinstance(cogs, list):
-                startup_extensions = cogs
-            else:
-                startup_extensions = []
+            startup_extensions = [f"{os.path.basename(ext)[:-3]}"
+                                  for ext in glob.glob("cogs/*.py")]
 
             for extension in startup_extensions:
                 try:
@@ -293,7 +299,7 @@ class Iceteabot(commands.Bot):
 
     async def update_discord_bots(self) -> bool:
         async with self.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
-                                           headers={"Authorization": self.config['api_keys']['d_bots']},
+                                           headers={"Authorization": self.config['discordbots_token']},
                                            json={"server_count": len(self.guilds)}) as response:
             if response.status == 200:
                 return True

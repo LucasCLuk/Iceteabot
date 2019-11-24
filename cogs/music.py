@@ -12,6 +12,30 @@ from discord.ext import commands
 
 from utils.iceteacontext import IceTeaContext
 
+youtube_dl_options = {
+    "source_address": "0.0.0.0",
+    "format": "bestaudio/best",
+    "extractaudio": True,
+    "audioformat": "mp3",
+    "nocheckcertificate": True,
+    "ignoreerrors": True,
+    "quiet": True,
+    "no_warnings": True,
+    "outtmpl": "data/music/%(id)s.%(ext)s",
+    "default_search": "auto",
+    "postprocessors": [
+        {
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192"
+        }
+    ],
+    "username": "",
+    "password": "",
+    "no-cache-dir": True,
+    "yes_playlist": True
+}
+
 
 async def bot_administrator(ctx):
     user_data = await ctx.user_data()
