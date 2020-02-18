@@ -17,6 +17,8 @@ services:
 
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - iceteabot
   iceteabot:
     hostname: "iceteabot"
     container_name: "iceteabot-container"
@@ -24,9 +26,13 @@ services:
     depends_on:
       - database
     environment:
-      DISCORD_TOKEN
-      POSTGRES_URL
+      - DISCORD_TOKEN
+      - POSTGRES_URL
 
 
 volumes:
   pgdata:
+
+networks:
+  iceteabot:
+    driver: bridge

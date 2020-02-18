@@ -155,7 +155,7 @@ class Poll(commands.Cog):
             await ctx.send("I can only process 10 options MAX")
             return
         else:
-            await ctx.invoke(self.____poll_data, *data.split())
+            await self.____poll_data(ctx, *data.split())
             pid = str(uuid.uuid4())
             options = dict(zip(self.poll_data[ctx.message.id], self.valid_reactions))
             embed = Embed(title=title)

@@ -219,7 +219,6 @@ class Iceteabot(commands.Bot):
             await self.sql.setup()
         except Exception as e:
             print(traceback.format_tb(e))
-            exit(1)
 
     async def _initialize(self):
         try:
