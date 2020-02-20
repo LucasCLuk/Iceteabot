@@ -5,7 +5,7 @@ COPY . /opt/iceteabot
 
 WORKDIR /opt/iceteabot
 
-RUN pip install -r requirements.txt
+RUN pip install -U -r requirements.txt
 
 
 CMD ["python", "bot.py"]
