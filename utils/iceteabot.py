@@ -42,7 +42,6 @@ class Iceteabot(commands.Bot):
         self.version = self.config.get("version", 1.0)
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
         self.uptime: datetime.datetime = datetime.datetime.utcnow()
-        self.owner: typing.Optional[models.User] = None
         self.cog_path: str = "cogs"
         self.client_id: typing.Optional[str] = None
         try:
@@ -223,11 +222,14 @@ class Iceteabot(commands.Bot):
     async def _initialize(self):
         try:
             await self._ready.wait()
-            application_info: discord.AppInfo = await self.application_info()
-            self.client_id = application_info.id
-            self.owner = application_info.owner
-            self.owner_id = application_info.owner.id
             self.name = str(self.user)
+            app = await self.application_info()
+            self.client_id = app.id
+            if app.team:
+                self.owner_ids = {m.id for m in app.team.members}
+                self.owners = tuple(self.get_user(m.id) for m in app.team.members)
+            else:
+                self.owner_id = app.owner.id
             await self.populate_database()
             startup_extensions = [f"{os.path.basename(ext)[:-3]}"
                                   for ext in glob.glob("cogs/*.py")]
@@ -250,7 +252,6 @@ class Iceteabot(commands.Bot):
             try:
                 from sentry_sdk import capture_exception
                 capture_exception(e)
-                exit(1)
             except ImportError:
                 pass
 

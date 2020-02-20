@@ -76,7 +76,7 @@ class Stats(commands.Cog):
         """Tells you information about the bot itself."""
         embed = discord.Embed(description=f"{ctx.bot.name} version **{ctx.bot.version}**")
         embed.colour = ctx.me.top_role.color
-        owner = ctx.bot.owner
+        owner = ctx.bot.owners[1]
         embed.set_thumbnail(url=ctx.me.avatar_url)
         guild_commands_used = f"{await ctx.guild_data.get_total_commands_used():,}"
         total_commands_used = f"{await ctx.bot.sql.get_total_commands_used():,}"
