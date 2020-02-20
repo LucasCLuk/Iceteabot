@@ -43,6 +43,7 @@ class Iceteabot(commands.Bot):
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
         self.uptime: datetime.datetime = datetime.datetime.utcnow()
         self.cog_path: str = "cogs"
+        self.owner: typing.Optional[discord.User] = None
         self.client_id: typing.Optional[str] = None
         try:
             import ujson
@@ -228,6 +229,7 @@ class Iceteabot(commands.Bot):
             if app.team:
                 self.owner_ids = {m.id for m in app.team.members}
                 self.owners = tuple(self.get_user(m.id) for m in app.team.members)
+                self.owner = self.owners[0]
             else:
                 self.owner_id = app.owner.id
             await self.populate_database()
