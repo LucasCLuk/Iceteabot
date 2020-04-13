@@ -269,16 +269,16 @@ class Owner(commands.Cog):
         """Nukes the bot, and destroys the files"""
 
     @commands.command(name="updateconfig")
+    @commands.dm_only()
     async def update_config(self, ctx: IceTeaContext):
         """Updates the bot's config file"""
         with open(os.path.join('data', 'config.json')) as file:
             try:
-                import ujson
-                ctx.bot.config = ujson.load(file)
+                # noinspection PyUnresolvedReferences
+                import ujson as json
             except (ModuleNotFoundError, ImportError):
                 import json
-                ctx.bot.config = json.load(file)
-                pass
+            ctx.bot.config = json.load(file)
             await ctx.message.add_reaction('\u2705')
 
     @commands.command(name="updatedbots")

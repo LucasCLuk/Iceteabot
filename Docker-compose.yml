@@ -5,7 +5,6 @@ version: "3"
 
 services:
   database:
-    hostname: "postgres"
     container_name: "iceteabot-postgres"
     image: "postgres:latest"
     ports:
@@ -17,8 +16,6 @@ services:
 
     volumes:
       - pgdata:/var/lib/postgresql/data
-    networks:
-      - iceteabot
   iceteabot:
     hostname: "iceteabot"
     container_name: "iceteabot-container"
@@ -26,13 +23,10 @@ services:
     depends_on:
       - database
     environment:
-      - DISCORD_TOKEN
-      - POSTGRES_URL
+      DISCORD_TOKEN: $DISCORD_TOKEN
+      POSTGRES_URL: postgresql://iceteabot:Iceteabot@iceteabot-postgres:5432/iceteabot
+
 
 
 volumes:
   pgdata:
-
-networks:
-  iceteabot:
-    driver: bridge
