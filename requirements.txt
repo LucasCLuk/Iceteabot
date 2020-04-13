@@ -7,9 +7,9 @@ parsedatetime
 python-dateutil
 timeago
 pytz
-discord.py[voice]
+discord.py[voice]>=1.3.2
 ujson
 asyncpg
 sentry-sdk
 aiocontextvars
-uvloop
+python-dotenv

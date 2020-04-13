@@ -12,6 +12,30 @@ from discord.ext import commands
 
 from utils.iceteacontext import IceTeaContext
 
+youtube_dl_options = {
+    "source_address": "0.0.0.0",
+    "format": "bestaudio/best",
+    "extractaudio": True,
+    "audioformat": "mp3",
+    "nocheckcertificate": True,
+    "ignoreerrors": True,
+    "quiet": True,
+    "no_warnings": True,
+    "outtmpl": "data/music/%(id)s.%(ext)s",
+    "default_search": "auto",
+    "postprocessors": [
+        {
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192"
+        }
+    ],
+    "username": "",
+    "password": "",
+    "no-cache-dir": True,
+    "yes_playlist": True
+}
+
 
 async def bot_administrator(ctx):
     user_data = await ctx.user_data()
@@ -21,7 +45,7 @@ async def bot_administrator(ctx):
 class YoutubeAPI:
     def __init__(self, bot):
         self.bot = bot
-        self.api_key = bot.config['api_keys']['google']
+        self.api_key = bot.config['youtube_token']
 
     async def get_result(self, search: str) -> str:
         async with self.bot.aioconnection.get(f"https://www.youtube.com/results?search_query={search}") as response:
@@ -176,7 +200,7 @@ class VoiceState(discord.PCMVolumeTransformer):
     async def playlist_processor(self):
         num_processed = 0
         while True:
-            with youtube_dl.YoutubeDL(self.bot.config['youtube_dl_options']) as ydl:
+            with youtube_dl.YoutubeDL(youtube_dl_options) as ydl:
                 try:
                     next_up = await asyncio.wait_for(fut=self.playlist_que.get(), timeout=5, loop=self.bot.loop)
                     self.playlist_que.task_done()
@@ -222,7 +246,6 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.youtube = YoutubeAPI(bot)
-        self.youtube_dl_options = self.bot.config['youtube_dl_options']
         self.voice_states: typing.Dict[int, VoiceState] = {}
         try:
             with open(os.path.join('data', 'stations.json')) as file:
@@ -308,7 +331,7 @@ class Music(commands.Cog):
                 voice_state.playlist_processor_task = self.bot.loop.create_task(voice_state.playlist_processor())
 
                 return
-        with youtube_dl.YoutubeDL(self.youtube_dl_options) as ydl:
+        with youtube_dl.YoutubeDL(youtube_dl_options) as ydl:
             information = await self.bot.loop.run_in_executor(None, ydl.extract_info, url, False)
         if information is None:
             return await ctx.send("Unable to process this song")

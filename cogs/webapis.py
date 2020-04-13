@@ -12,9 +12,9 @@ from utils.iceteacontext import IceTeaContext
 class WebAPIs:
     def __init__(self, bot):
         self.bot = bot
-        self.oxford_data = bot.config['api_keys']['oxford']
-        self.mash_shape_key = bot.config['api_keys']['mashshape']
-        self.weather_key = bot.config['api_keys']['weather']
+        self.oxford_data = bot.config['oxford_token']
+        self.mash_shape_key = bot.config['mashshape_token']
+        self.weather_key = bot.config['openweather_token']
 
     async def getfortune(self):
         async with self.bot.aioconnection.get("http://www.fortunecookiemessage.com/") as response:

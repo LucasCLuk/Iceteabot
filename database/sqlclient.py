@@ -122,7 +122,7 @@ class SqlClient:
             cleaned_column_names)
         connection: asyncpg.Connection = await self.pool.acquire()
         query = f'INSERT INTO {model_table} VALUES({insert_arguments}) ' \
-            f'ON CONFLICT ({model_primary_keys}) DO UPDATE set {update_arguments};'
+                f'ON CONFLICT ({model_primary_keys}) DO UPDATE set {update_arguments};'
         try:
             await connection.execute(query,
                                      *model_data.values())
@@ -136,6 +136,7 @@ class SqlClient:
         await self.execute(query, model.id)
 
     async def delete_all(self, models_to_delete: typing.List[models.Model]):
+        # TODO
         pass
 
     async def setup(self):

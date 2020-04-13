@@ -36,6 +36,6 @@ jobs:
           DATABASE_HOST: localhost
           DATABASE_PORT: ${{ job.services.postgres.ports[5432] }}
         run: |
-          python setup_db
+          python setup_db.py
           python -m unittest tests
 

@@ -22,20 +22,27 @@ from utils.iceteacontext import IceTeaContext
 
 class Iceteabot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        self.config: dict = kwargs.pop("config", {})
+        self.config: dict = {
+            "default_prefix": os.getenv('DEFAULT_PREFIX', '<>'),
+            "discord_token": os.getenv("DISCORD_TOKEN"),
+            "openweather_token": os.getenv('OPENWEATHER_TOKEN'),
+            "oxford_token": os.getenv('OXFORD_TOKEN'),
+            "youtube_token": os.getenv('YOUTUBE_TOKEN'),
+            "mashshape_token": os.getenv('MASHSHAPE_TOKEN'),
+            "sentry_token": os.getenv('SENTRY_TOKEN'),
+            "discordbots_token": os.getenv('DISCORDBOTS_TOKEN')
+        }
         super(Iceteabot, self).__init__(
             command_prefix=self.get_guild_prefix,
             help_command=IceHelpCommand(),
             status=discord.Status.idle,
             case_insensitive=True,
             *args, **self.config)
-        self.debug: bool = self.config.get("debug", True)
-        self.name: str = self.config.get("name", "iceteabot")
+        self.name: str = "Iceteabot"
         self.version = self.config.get("version", 1.0)
         self.default_prefix: str = self.config.get("default_prefix", "<<<")
         self.uptime: datetime.datetime = datetime.datetime.utcnow()
-        self.owner: typing.Optional[models.User] = None
-        self.cog_path: str = self.config.get("cogs_path", "cogs")
+        self.cog_path: str = "cogs"
         self.client_id: typing.Optional[str] = None
         try:
             import ujson
@@ -57,29 +64,34 @@ class Iceteabot(commands.Bot):
         self.last_reconnect: typing.Optional[datetime.datetime] = None
         self.socket_stats: typing.Counter[str, int] = Counter()
 
-    # noinspection PyUnresolvedReferences
-    def run(self, *args, **kwargs):
+    @property
+    def owner(self) -> typing.Optional[discord.User]:
+        if self.owner_ids:
+            return self.get_user(self.owner_ids[0])
+        else:
+            return self.get_user(self.owner_id)
+
+    def _prepare(self, *args, **kwargs):
         if args:
             token = args[0]
         else:
-            token = self.config['api_keys']['discord']
+            token = self.config['discord_token']
         try:
             import uvloop
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         except ImportError:
             pass
+        if self.sql is None:
+            raise BaseException("Sql Not Setup, make sure to run Iceteabot.setup_database")
+        return token
+
+    # noinspection PyUnresolvedReferences
+    def run(self, *args, **kwargs):
+        token = self._prepare(*args, **kwargs)
         return super(Iceteabot, self).run(token)
 
     async def start(self, *args, **kwargs):
-        if args:
-            token = args[0]
-        else:
-            token = self.config['api_keys']['discord']
-        try:
-            import uvloop
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        except ImportError:
-            pass
+        token = self._prepare(*args, **kwargs)
         await super(Iceteabot, self).start(token)
 
     def reload_extension(self, name):
@@ -98,8 +110,6 @@ class Iceteabot(commands.Bot):
         await self.aioconnection.close()
         await self.sql.pool.close()
         await super(Iceteabot, self).close()
-        if not self.debug:
-            exit(1)  # This is so that the system manager will properly restart it.
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Game(name="waiting for orders"))
@@ -176,12 +186,12 @@ class Iceteabot(commands.Bot):
     def setup_logging(self):
         self.logger = logging.getLogger("discord")
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename="data/iceteabot.log", encoding='utf-8', mode='w')
+        handler = logging.StreamHandler(stream=sys.stdout)
         handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
         self.logger.addHandler(handler)
         self.error_logger = logging.getLogger("errors")
         self.error_logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename="data/error.log", encoding='utf-8', mode='w')
+        handler = logging.StreamHandler(stream=sys.stderr)
         handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
         self.error_logger.addHandler(handler)
         self.setup_raven()
@@ -194,7 +204,7 @@ class Iceteabot(commands.Bot):
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=logging.ERROR  # Send errors as events
             )
-            init(self.config['api_keys']['sentry'], integrations=[sentry_logging])
+            init(self.config['sentry_token'], integrations=[sentry_logging])
         except ImportError:
             return
 
@@ -211,27 +221,24 @@ class Iceteabot(commands.Bot):
     async def setup_database(self):
         # noinspection PyBroadException
         try:
-            self.sql = SqlClient(await asyncpg.create_pool(**self.config['database']), self)
+            self.sql = SqlClient(await asyncpg.create_pool(dsn=os.getenv('POSTGRES_URL')), self)
             await self.sql.setup()
         except Exception as e:
             print(traceback.format_tb(e))
-            exit(1)
 
     async def _initialize(self):
         try:
             await self._ready.wait()
-            application_info: discord.AppInfo = await self.application_info()
-            self.client_id = application_info.id
-            self.owner = application_info.owner
-            await self.populate_database()
-            cogs = self.config.get("extensions")
-            if cogs == "*":
-                startup_extensions = [f"{os.path.basename(ext)[:-3]}"
-                                      for ext in glob.glob("cogs/*.py")]
-            elif isinstance(cogs, list):
-                startup_extensions = cogs
+            self.name = str(self.user)
+            app = await self.application_info()
+            self.client_id = app.id
+            if app.team:
+                self.owner_ids = tuple(m.id for m in app.team.members)
             else:
-                startup_extensions = []
+                self.owner_id = app.owner.id
+            await self.populate_database()
+            startup_extensions = [f"{os.path.basename(ext)[:-3]}"
+                                  for ext in glob.glob("cogs/*.py")]
 
             for extension in startup_extensions:
                 try:
@@ -241,17 +248,16 @@ class Iceteabot(commands.Bot):
                     print(exc)
                     traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
 
-            print(f"Successfully logged in as {self.user}\n" +
-                  f"Using version {discord.__version__} of discord.py\n" +
-                  f"Using {psutil.Process().memory_full_info().uss / 1024 ** 2} of ram\n" +
-                  f"loaded {len(self.extensions)} cogs\n" +
-                  f"{'-' * 15}")
+            self.logger.info(f"Successfully logged in as {self.user}\n" +
+                             f"Using version {discord.__version__} of discord.py\n" +
+                             f"Using {psutil.Process().memory_full_info().uss / 1024 ** 2} of ram\n" +
+                             f"loaded {len(self.extensions)} cogs\n" +
+                             f"{'-' * 15}")
             await self.change_presence(activity=discord.Game(name="waiting for orders"))
         except Exception as e:
             try:
                 from sentry_sdk import capture_exception
                 capture_exception(e)
-                exit(1)
             except ImportError:
                 pass
 
@@ -293,7 +299,7 @@ class Iceteabot(commands.Bot):
 
     async def update_discord_bots(self) -> bool:
         async with self.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
-                                           headers={"Authorization": self.config['api_keys']['d_bots']},
+                                           headers={"Authorization": self.config['discordbots_token']},
                                            json={"server_count": len(self.guilds)}) as response:
             if response.status == 200:
                 return True

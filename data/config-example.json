@@ -1,10 +1,5 @@
 {
-  "default prefix": ">>",
-  "owner_id": "",
-  "master_key": "",
-  "key_used": false,
   "api_keys": {
-    "discord": "",
     "riot": "",
     "osu": "",
     "steam": "",
@@ -12,13 +7,6 @@
     "wolframalpha": "",
     "champion_gg": "",
     "weather": ""
-  },
-  "rethinkdb": {
-    "host": "127.0.0.1",
-    "port": "28015",
-    "db": "iceteabot",
-    "user": "admin",
-    "password": ""
   },
   "youtube_dl_options": {
     "source_address": "0.0.0.0",
