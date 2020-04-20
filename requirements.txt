@@ -13,3 +13,4 @@ asyncpg
 sentry-sdk
 aiocontextvars
 python-dotenv
+validators

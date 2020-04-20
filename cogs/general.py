@@ -1,9 +1,12 @@
 import asyncio
+import datetime
 import random
 import re
+import typing
 
 import discord
-from discord.ext import commands
+import lxml.etree
+from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, UserInputError
 
 from utils import formats
@@ -39,9 +42,72 @@ class TimeParser:
             raise commands.BadArgument('That\'s a bit too far in the future for me.')
 
 
+async def memory_express_stock_checker(ctx, product_id):
+    data = {}
+    async with ctx.bot.aioconnection.get(f"https://www.memoryexpress.com/Products/{product_id}") as response:
+        response.raise_for_status()
+        tree = lxml.etree.fromstring(await response.text(), lxml.etree.HTMLParser())
+        item_name = tree.xpath('//*[@id="ProductDetails"]/section[1]/header/h1/text()')
+        try:
+            item_price = tree.xpath('//*[@id="ProductPricing"]/div[4]/div[2]/div/text()')[1]
+        except IndexError:
+            try:
+                item_price = tree.xpath('//*[@id="ProductPricing"]/div/div[2]/div')[1]
+            except IndexError:
+                item_price = "Unknown"
+        inventory = tree.xpath('//*[@id="ProductDetailedInventory"]/div[2]')[0].xpath(
+            '//*[@id="ProductDetailedInventory"]/div[2]/div/div[2]/div/div/ul')[0]
+        for region in inventory:
+            stores = []
+            li = region.xpath("div[1]/text()")
+            region_name = li[0]
+            stores_tree = region.xpath("div[2]/ul")
+            for store in stores_tree[0]:
+                store_data = store.xpath("div")[0].xpath("span")
+                store_name = store_data[0].xpath("text()")[0]
+                store_quantity = store_data[2].xpath("text()")[0]
+                stores.append((store_name, store_quantity))
+            data[region_name] = stores
+        online_store_div = tree.xpath('//*[@id="ProductDetailedInventory"]/div[2]/div/div[3]/div[2]/div[1]')[
+            0].xpath(
+            "span")
+        online_store_name = online_store_div[0].xpath('text()')[0]
+        online_store_stock = online_store_div[2].xpath('text()')[0]
+        data[online_store_name] = [(online_store_name, online_store_stock)]
+    return {"url": response.url, "item_price": item_price, "item_name": item_name[1], "data": data}
+
+
+class StockWatcher:
+
+    def __init__(self, ctx, product_id):
+        self.ctx = ctx
+        self.product_id = product_id
+        self.product_found: bool = False
+
+    async def item_in_stock(self) -> bool:
+        data = await memory_express_stock_checker(self.ctx, self.product_id)
+        item_name = data['item_name']
+        item_url = data['url']
+        edmonton_region = data['data']['Edmonton Region']
+        for store in edmonton_region:
+            stock = store[1]
+            if stock != "Out of Stock":
+                await self.ctx.send(f"{self.ctx.author.mention} - {item_name} is in stock: <{item_url}>")
+                self.product_found = True
+                break
+        return self.product_found
+
+
 class General(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot  # type: commands.Bot
+        self.bot: "Iceteabot" = bot
+        self.memory_express_watchers: typing.Dict[discord.User, typing.Dict[str, StockWatcher]] = getattr(self.bot,
+                                                                                                          "memory_express_watchers",
+                                                                                                          {})
+        self.stock_checker.start()
+
+    def cog_unload(self):
+        self.bot.memory_express_watchers = dict(self.memory_express_watchers)
 
     @commands.command(name="hug")
     async def hug(self, ctx, target: discord.Member = None):
@@ -197,6 +263,54 @@ class General(commands.Cog):
         except UserInputError as e:
             await ctx.send(e, delete_after=20)
 
+    @commands.group(invoke_without_command=True)
+    async def mem(self, ctx: IceTeaContext, *, product_id):
+        try:
+            data = await memory_express_stock_checker(ctx, product_id)
+        except:
+            return await ctx.send("Unable to Retriever information")
+        item_price = data['item_price']
+        url = data['url']
+        item_name = data['item_name']
+        embed = discord.Embed(description=f"Current Price: {item_price}")
+        embed.set_author(name=item_name, url=url)
+        for region, stores in data.items():
+            embed.add_field(name=region, value="\n".join(f"{store} - {quantity}" for store, quantity in stores))
+        await ctx.send(embed=embed)
+
+    @mem.command()
+    async def watch(self, ctx: IceTeaContext, *, product_id):
+        self.memory_express_watchers[ctx.author] = {product_id: StockWatcher(ctx, product_id)}
+        await ctx.send(
+            f"Successfully added this item to my stock watcher, the next time I will check stock is in "
+            f"{self.bot.get_time_difference(self.stock_checker.next_iteration.replace(tzinfo=None))}")
+
+    @tasks.loop(hours=24)
+    async def stock_checker(self):
+        next_midnight = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
+        self.stock_checker._next_iteration = next_midnight
+        await discord.utils.sleep_until(next_midnight)
+        users_to_be_removed = []
+        for user in self.memory_express_watchers:
+            watchers_items_to_be_removed = []
+            for item_watched in self.memory_express_watchers[user].values():
+                was_found = await item_watched.item_in_stock()
+                if was_found:
+                    watchers_items_to_be_removed.append(item_watched)
+                    break
+            if all(w.product_found for w in self.memory_express_watchers[user].values()):
+                users_to_be_removed.append(user)
+        for user in users_to_be_removed:
+            self.memory_express_watchers.pop(user)
+
+    @stock_checker.before_loop
+    async def before_stock_checker(self):
+        await self.bot.wait_until_ready()
+
 
 def setup(bot):
     bot.add_cog(General(bot))
+
+
+if __name__ == '__main__':
+    from utils.iceteabot import Iceteabot

@@ -36,33 +36,13 @@ class Stats(commands.Cog):
             embed.add_field(name=event.lower().replace("_", " "), value=f"{value:,} **({percent}%)**")
         await ctx.send(embed=embed)
 
-    def get_bot_uptime(self, time, *, brief=False):
-        if time:
-            now = datetime.datetime.utcnow()
-            delta = now - time
-            hours, remainder = divmod(int(delta.total_seconds()), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            days, hours = divmod(hours, 24)
-
-            if not brief:
-                if days:
-                    fmt = '{d} days, {h} hours, {m} minutes, and {s} seconds'
-                else:
-                    fmt = '{h} hours, {m} minutes, and {s} seconds'
-            else:
-                fmt = '{h}h {m}m {s}s'
-                if days:
-                    fmt = '{d}d ' + fmt
-
-            return fmt.format(d=days, h=hours, m=minutes, s=seconds)
-        else:
-            return None
 
     @commands.command()
     async def uptime(self, ctx):
         """Tells you how long the bot has been up for."""
-        await ctx.send(f'Uptime: **{self.get_bot_uptime(self.bot.uptime)}**\nThe Last time I was reconnected was: '
-                       f'**{self.get_bot_uptime(self.bot.last_reconnect)}** ')
+        await ctx.send(
+            f'Uptime: **{self.bot.get_time_difference(self.bot.uptime)}**\nThe Last time I was reconnected was: '
+            f'**{self.bot.get_time_difference(self.bot.last_reconnect)}** ')
 
     @commands.command(name="ram")
     async def ramusage(self, ctx):
@@ -95,7 +75,7 @@ class Stats(commands.Cog):
             f"unique\n{unique_online:,} unique online"
         embed.add_field(name='Members', value=members)
         embed.add_field(name='Channels', value=f'{text + voice:,} total\n{text:,} text\n{voice:,} Voice')
-        embed.add_field(name='Uptime', value=self.get_bot_uptime(self.bot.uptime, brief=True))
+        embed.add_field(name='Uptime', value=self.bot.get_time_difference(self.bot.uptime, brief=True))
         embed.set_footer(text='Made with discord.py version {0}'.format(discord.__version__),
                          icon_url='http://i.imgur.com/5BFecvA.png')
         embed.timestamp = self.bot.uptime
