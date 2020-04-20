@@ -274,7 +274,7 @@ class General(commands.Cog):
         item_name = data['item_name']
         embed = discord.Embed(description=f"Current Price: {item_price}")
         embed.set_author(name=item_name, url=url)
-        for region, stores in data.items():
+        for region, stores in data['data'].items():
             embed.add_field(name=region, value="\n".join(f"{store} - {quantity}" for store, quantity in stores))
         await ctx.send(embed=embed)
 
