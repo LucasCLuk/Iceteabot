@@ -318,10 +318,13 @@ class Iceteabot(commands.Bot):
         await old_guild.delete()
 
     @staticmethod
-    def get_time_difference(time, *, brief=False):
+    def get_time_difference(time, *, brief=False, reverse: bool = False):
         if time:
             now = datetime.datetime.utcnow()
-            delta = now - time
+            if reverse:
+                delta = time - now
+            else:
+                delta = now - time
             hours, remainder = divmod(int(delta.total_seconds()), 3600)
             minutes, seconds = divmod(remainder, 60)
             days, hours = divmod(hours, 24)

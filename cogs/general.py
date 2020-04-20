@@ -85,16 +85,28 @@ class StockWatcher:
         self.product_found: bool = False
 
     async def item_in_stock(self) -> bool:
+        stores_with_stock = {}
         data = await memory_express_stock_checker(self.ctx, self.product_id)
         item_name = data['item_name']
         item_url = data['url']
+        item_price = data['item_price']
         edmonton_region = data['data']['Edmonton Region']
+        online_region = data['data']['Online Store']
         for store in edmonton_region:
             stock = store[1]
-            if stock != "Out of Stock":
-                await self.ctx.send(f"{self.ctx.author.mention} - {item_name} is in stock: <{item_url}>")
-                self.product_found = True
-                break
+            if stock != "Out of Stock" and stock != "0":
+                stores_with_stock[store] = stock
+        for store in online_region:
+            stock = store[1]
+            if stock != "Out of Stock" and stock != "0":
+                stores_with_stock[store] = stock
+        if stores_with_stock:
+            self.product_found = True
+        embed = discord.Embed(description=f"Current Price: {item_price}")
+        embed.set_author(name=item_name, url=item_url)
+        embed.add_field(name="Stores",
+                        value="\n".join(f"{store[0]} - {stock}" for store, stock in stores_with_stock.items()))
+        await self.ctx.send(self.ctx.author.mention, embed=embed)
         return self.product_found
 
 
@@ -283,7 +295,7 @@ class General(commands.Cog):
         self.memory_express_watchers[ctx.author] = {product_id: StockWatcher(ctx, product_id)}
         await ctx.send(
             f"Successfully added this item to my stock watcher, the next time I will check stock is in "
-            f"{self.bot.get_time_difference(self.stock_checker.next_iteration.replace(tzinfo=None))}")
+            f"{self.bot.get_time_difference(self.stock_checker.next_iteration.replace(tzinfo=None), reverse=True)}")
 
     @tasks.loop(hours=24)
     async def stock_checker(self):
