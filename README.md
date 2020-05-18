@@ -18,7 +18,7 @@ Iceteabot is a multipurpose bot for discord written in Python using [Discord.py]
 | [Music](#music)                         | General purpose Music Player                                    |
 | [Polls](#polls)                         | Host discord polls allowing people to vote                      |
 | [Tasks](#tasks)                         | Allow users to create TODOs/Tasks for themselves                |
-| [Activity Tracker](#activity-tracker) Tracking  | Gives/Removes a role based on a persons currently played game   |
+| [Activity Tracker](#activity-tracker)   | Gives/Removes a role based on a persons currently played game   |
 
 ## NickName Tracking
 
