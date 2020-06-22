@@ -30,11 +30,7 @@ jobs:
           pip install -r requirements.txt
       - name: run tests
         env:
-          DATABASE_USER: postgres
-          DATABASE_PASSWORD: iceteacity
-          DATABASE_NAME: iceteacity
-          DATABASE_HOST: localhost
-          DATABASE_PORT: ${{ job.services.postgres.ports[5432] }}
+          POSTGRES_URL: postgres://postgres:iceteacity@localhost:${{ job.services.postgres.ports[5432] }}/iceteacity
         run: |
           python setup_db.py
           python -m unittest tests

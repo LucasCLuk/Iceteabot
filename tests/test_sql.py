@@ -1,8 +1,7 @@
 import os
 
 import asyncpg
-import asynctest
-
+import unittest
 from database import models
 from database.sqlclient import SqlClient
 
@@ -15,7 +14,7 @@ database_settings = {
 }
 
 
-class TestGuildMethods(asynctest.TestCase):
+class TestGuildMethods(unittest.IsolatedAsyncioTestCase):
 
     async def test_guild_methods(self):
         """Test Guild Methods"""
@@ -47,7 +46,7 @@ class TestGuildMethods(asynctest.TestCase):
         self.assertIsNone(response)
 
 
-class TestCommandStats(asynctest.TestCase):
+class TestCommandStats(unittest.IsolatedAsyncioTestCase):
 
     async def test_command_stats(self):
         pool = await asyncpg.create_pool(**database_settings)
@@ -66,7 +65,7 @@ class TestCommandStats(asynctest.TestCase):
         self.assertIsNotNone(global_data)
 
 
-class TagCRUDTests(asynctest.TestCase):
+class TagCRUDTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_tag_crud(self):
         pool = await asyncpg.create_pool(**database_settings)
@@ -86,7 +85,7 @@ class TagCRUDTests(asynctest.TestCase):
         self.assertIsNone(old_tag)
 
 
-class TagAliasTest(asynctest.TestCase):
+class TagAliasTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_alias(self):
         pool = await asyncpg.create_pool(**database_settings)
@@ -100,7 +99,7 @@ class TagAliasTest(asynctest.TestCase):
         await guild.call_tag("fooalias", 1111, 1234)
 
 
-class CallTagTest(asynctest.TestCase):
+class CallTagTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_call_tag(self):
         pool = await asyncpg.create_pool(**database_settings)

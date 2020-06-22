@@ -44,11 +44,11 @@ class ReactionRoles(commands.Cog):
                         pass
 
     @commands.group(invoke_without_command=True)
-    async def reaction(self, ctx: "IceTeaContext", message: discord.Message):
+    async def reaction(self, ctx: "IceTeaContext"):
         """
-        Tells the bot to listen for reaction on this message to add/remove roles as needed.
+        Handles Reactions roles configuration of Iceteabot.
         """
-        pass
+        await ctx.send_help(ctx.command)
 
     @reaction.command(name="setup")
     async def setup_reactions(self, ctx: "IceTeaContext"):
