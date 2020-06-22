@@ -15,6 +15,12 @@ class ReactionRoles(commands.Cog):
         self.bot: "Iceteabot" = bot
 
     @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        if payload.guild_id:
+            guild_data = self.bot.get_guild_data(payload.guild_id)
+            await guild_data.delete_role_reaction_by_message(payload.message_id)
+
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         await self.update_member_roles(payload)
 
@@ -139,14 +145,14 @@ class ReactionRoles(commands.Cog):
         await ctx.send(embed=embed)
 
     @reaction.command(name="add")
-    async def add_role(self, ctx: "IceTeaContext", message: discord.Message, role: discord.Role,
-                       *, reaction: typing.Union[discord.Emoji, str]):
+    async def add_role(self, ctx: "IceTeaContext", message: discord.Message, reaction: typing.Union[discord.Emoji, str],
+                       *, role: discord.Role):
         """
         Maps a Reaction to a role on the given message
         """
         if isinstance(reaction, str):
             reaction = emoji.emojize(reaction)
-        await ctx.guild_data.add_role_reaction(ctx.author.id, message.id, reaction, role)
+        await ctx.guild_data.add_role_reaction(ctx.author.id, message.id, str(reaction), role.id)
         await message.add_reaction(reaction)
         await ctx.send_success()
 
@@ -164,6 +170,15 @@ class ReactionRoles(commands.Cog):
         if message_reaction:
             await message_reaction.clear()
         await ctx.send_success()
+
+    @reaction.command(name="delete")
+    async def delete_message(self, ctx: "IceTeaContext", message: discord.Message):
+        """
+        Tells the bot to stop listening on reactions on this message. Deleting the message also does this.
+        """
+        guild_data = ctx.guild_data
+        role_reactions = await guild_data.delete_role_reaction_by_message(message.id)
+        await ctx.send_success(f"Successfully Deleted {len(role_reactions)} entries")
 
 
 def setup(bot):

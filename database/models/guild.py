@@ -430,6 +430,13 @@ class Guild(Model):
         else:
             raise Exception()
 
+    async def delete_role_reaction_by_message(self, message_id):
+        role_reactions = list(filter(lambda rr: rr.message_id == message_id, self._reaction_roles))
+        for reaction_role in role_reactions:
+            self._reaction_roles.remove(reaction_role)
+            await reaction_role.delete()
+        return role_reactions
+
 
 @dataclasses.dataclass()
 class CommandStats:
