@@ -101,13 +101,13 @@ class SqlClient:
             response = await connection.fetchrow("SELECT * FROM guilds where id = $1", pid)
             if response:
                 guild = models.Guild(client=self, **dict(response))
-                await guild.get_data()
+                await guild.populate()
                 return guild
 
     async def get_all_guilds(self) -> typing.List[models.Guild]:
         guilds = []
         async for guild in self.get_all(models.Guild, "SELECT * FROM guilds"):
-            await guild.get_data()
+            await guild.populate()
             guilds.append(guild)
         return guilds
 
@@ -144,7 +144,9 @@ class SqlClient:
             for table in models.tables.keys():
                 table: models.Model = table
                 try:
-                    await connection.execute(table.setup_table())
+                    table_query = table.setup_table()
+                    if table_query:
+                        await connection.execute(table_query)
                 except asyncpg.DuplicateTableError:
                     continue
                 except Exception as e:

@@ -6,6 +6,7 @@ import asyncpg
 import discord
 from sentry_sdk import capture_exception
 
+from database.models import ReactionRole
 from database.models.activity import Activity
 from database.models.channel import Channel
 from database.models.command_call import CommandCall
@@ -31,6 +32,8 @@ class Guild(Model):
     _prefixes: typing.Dict[str, "Prefix"] = dataclasses.field(default_factory=dict, repr=False, compare=False)
     _activities: typing.Dict[str, "Activity"] = dataclasses.field(default_factory=dict, repr=False, compare=False)
     _faqs: typing.Dict[str, "FAQ"] = dataclasses.field(default_factory=dict, repr=False, compare=False)
+    _reaction_roles: typing.List["ReactionRole"] = dataclasses.field(default_factory=list, repr=False,
+                                                                     compare=False)
 
     @classmethod
     def setup_table(cls) -> str:
@@ -74,6 +77,14 @@ class Guild(Model):
     @property
     def blocked_channels(self):
         return self._blocked_channels
+
+    @property
+    def reaction_roles(self):
+        return self._reaction_roles
+
+    def get_reaction_role(self, message_id, emoji) -> typing.Optional['ReactionRole']:
+        return discord.utils.get(self._reaction_roles, message_id=message_id,
+                                 emoji=emoji)
 
     async def add_member(self, mid):
         new_member = Member(self.client, mid, guild=self.id)
@@ -315,11 +326,12 @@ class Guild(Model):
         blocked_channels = self.client.get_all(Channel, "SELECT * FROM channels WHERE guild = $1", self.id)
         self._blocked_channels = {channel.id: channel async for channel in blocked_channels}
 
-    async def get_data(self):
+    async def populate(self):
         await self.load_prefixes()
         await self.load_faqs()
         await self.load_activities()
         await self.load_blocked_channels()
+        await self.load_reaction_roles()
 
     async def add_prefix(self, prefix: str, author: int):
         new_prefix = Prefix(guild=self.id, author=author, prefix=prefix, client=self.client)
@@ -387,6 +399,36 @@ class Guild(Model):
         response["total_commands_used"] = await self.get_total_commands_used()
         response["total_commands_used_today"] = await self.get_total_commands_used_today()
         return CommandStats(**response)
+
+    async def load_reaction_roles(self):
+        gen = self.client.get_all(ReactionRole, "SELECT * FROM reaction_role WHERE guild = $1", self.id)
+        roles = [role async for role in gen]
+        self._reaction_roles = roles
+
+    async def add_role_reaction(self, author_id, message_id, emoji, role_id):
+        role_reaction = ReactionRole(
+            self.client, id=next(self.client.generator), message_id=message_id, emoji=emoji, guild=self.id,
+            author=author_id, role=role_id
+        )
+        await role_reaction.save()
+        self._reaction_roles.append(role_reaction)
+        return role_reaction
+
+    async def update_role_reaction(self, message_id, emoji, new_role_id):
+        role_reaction = self.get_reaction_role(message_id=message_id, emoji=emoji)
+        if role_reaction:
+            role_reaction.role = new_role_id
+            await role_reaction.save()
+        else:
+            raise Exception()
+
+    async def remove_role_reaction(self, message_id, emoji):
+        role_reaction = self.get_reaction_role(message_id=message_id, emoji=emoji)
+        if role_reaction:
+            self._reaction_roles.remove(role_reaction)
+            await role_reaction.delete()
+        else:
+            raise Exception()
 
 
 @dataclasses.dataclass()

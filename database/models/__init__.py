@@ -4,6 +4,7 @@ from .activity import Activity
 from .channel import Channel
 from .command_call import CommandCall
 from .faq import FAQ
+from .reaction_role import ReactionRole
 from .guild import Guild, CommandStats
 from .member import Member
 from .model import Model
@@ -30,5 +31,5 @@ tables: typing.Dict[type, str] = {
     CommandCall: "commands",
     TagLookup: "tagslink",
     TagCall: "tagcalls",
-
+    ReactionRole: "reaction_role"
 }
