@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.ext.commands import RoleConverter, MessageConverter
 
 from utils.iceteacontext import IceTeaContext
+import emoji
 
 
 class ReactionRoles(commands.Cog):
@@ -123,8 +124,16 @@ class ReactionRoles(commands.Cog):
         """
         reaction_roles = filter(lambda rr: rr.message_id == message.id, ctx.guild_data.reaction_roles)
         embed = discord.Embed()
+
+        def get_role_mention_or_name(reaction_role):
+            role = reaction_role.get_role()
+            if role:
+                return role.mention
+            else:
+                return f"<@&{reaction_role.role}>"
+
         embed.description = "\n".join([
-            f"{r.emoji} - {ctx.guild.get_role(r.role)}" for r in reaction_roles
+            f"{r.emoji} - {get_role_mention_or_name(r)}" for r in reaction_roles
         ])
         embed.add_field(name="\u200b", value=f"[Message]({message.jump_url})")
         await ctx.send(embed=embed)
@@ -135,6 +144,8 @@ class ReactionRoles(commands.Cog):
         """
         Maps a Reaction to a role on the given message
         """
+        if isinstance(reaction, str):
+            reaction = emoji.emojize(reaction)
         await ctx.guild_data.add_role_reaction(ctx.author.id, message.id, reaction, role)
         await message.add_reaction(reaction)
         await ctx.send_success()
@@ -146,6 +157,8 @@ class ReactionRoles(commands.Cog):
         Removes a given reaction from the database and the message
 
         """
+        if isinstance(reaction, str):
+            reaction = emoji.emojize(reaction)
         await ctx.guild_data.remove_role_reaction(message.id, reaction)
         message_reaction: typing.Optional[discord.Reaction] = discord.utils.get(message.reactions, emoji=str(reaction))
         if message_reaction:
