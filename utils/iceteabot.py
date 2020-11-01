@@ -30,13 +30,15 @@ class Iceteabot(commands.Bot):
             "youtube_token": os.getenv('YOUTUBE_TOKEN'),
             "mashshape_token": os.getenv('MASHSHAPE_TOKEN'),
             "sentry_token": os.getenv('SENTRY_TOKEN'),
-            "discordbots_token": os.getenv('DISCORDBOTS_TOKEN')
+            "discordbots_token": os.getenv('DISCORDBOTS_TOKEN'),
+            "postgres_url": os.getenv('POSTGRES_URL'),
         }
         super(Iceteabot, self).__init__(
             command_prefix=self.get_guild_prefix,
             help_command=IceHelpCommand(),
             status=discord.Status.idle,
             case_insensitive=True,
+            intents=discord.Intents.all(),
             *args, **self.config)
         self.name: str = "Iceteabot"
         self.version = self.config.get("version", 1.0)
@@ -221,7 +223,7 @@ class Iceteabot(commands.Bot):
     async def setup_database(self):
         # noinspection PyBroadException
         try:
-            self.sql = SqlClient(await asyncpg.create_pool(dsn=os.getenv('POSTGRES_URL')), self)
+            self.sql = SqlClient(await asyncpg.create_pool(dsn=self.config['postgres_url']), self)
             await self.sql.setup()
         except Exception as e:
             print(traceback.format_tb(e))
@@ -298,11 +300,12 @@ class Iceteabot(commands.Bot):
         ctx.author_data = await ctx.get_user_data(ctx.author)
 
     async def update_discord_bots(self) -> bool:
-        async with self.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
-                                           headers={"Authorization": self.config['discordbots_token']},
-                                           json={"server_count": len(self.guilds)}) as response:
-            if response.status == 200:
-                return True
+        if self.config.get('discordbots_token'):
+            async with self.aioconnection.post("https://discordbots.org/api/bots/180776430970470400/stats",
+                                               headers={"Authorization": self.config['discordbots_token']},
+                                               json={"server_count": len(self.guilds)}) as response:
+                if response.status == 200:
+                    return True
 
     def get_guild_data(self, gid: int) -> models.Guild:
         return self._guild_data.get(gid)
